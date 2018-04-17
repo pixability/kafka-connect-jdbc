@@ -48,7 +48,7 @@ public class SnowflakeDialect extends DbDialect {
         case Time.LOGICAL_NAME:
           return "TIME";
         case Timestamp.LOGICAL_NAME:
-          return "TIMESTAMP";
+          return "TIMESTAMP_LTZ";
       }
     }
     switch (type) {
@@ -66,6 +66,8 @@ public class SnowflakeDialect extends DbDialect {
         return "FLOAT";
       case STRING:
         return "VARCHAR";
+      case BOOLEAN:
+        return "BOOLEAN";
       case BYTES:
         return "BINARY";
       case ARRAY:
