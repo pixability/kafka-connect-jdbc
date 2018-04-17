@@ -16,15 +16,18 @@
 
 package io.confluent.connect.jdbc.sink.dialect;
 
+import io.confluent.connect.jdbc.sink.metadata.SinkRecordField;
 import org.apache.kafka.connect.data.Date;
 import org.apache.kafka.connect.data.Decimal;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.Time;
 import org.apache.kafka.connect.data.Timestamp;
 
-import java.util.*;
-
-import io.confluent.connect.jdbc.sink.metadata.SinkRecordField;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 import static io.confluent.connect.jdbc.sink.dialect.StringBuilderUtil.joinToBuilder;
 import static io.confluent.connect.jdbc.sink.dialect.StringBuilderUtil.nCopiesToBuilder;
