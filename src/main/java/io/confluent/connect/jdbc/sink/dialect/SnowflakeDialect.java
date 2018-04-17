@@ -94,17 +94,28 @@ public class SnowflakeDialect extends DbDialect {
     final String tableName = escaped(table);
     builder.append(tableName);
     builder.append(" using (select ");
-    joinToBuilder(builder, ", ", keyCols, cols, escaper());
+    int index = 1;
+    for (String keyCol : keyCols) {
+      if (index > 1) builder.append(',');
+      builder.append('$').append(index).append(" as ").append(escaped(keyCol));
+      index++;
+    }
+    if (cols != null) {
+      for (String col : cols) {
+        if (keyCols.size() > 0) builder.append(',');
+        builder.append('$').append(index).append(" as ").append(escaped(col));
+        index++;
+      }
+    }
     builder.append(" from (values (");
-    nCopiesToBuilder(builder, ",", "?", keyCols.size() + (cols == null ? 0 : cols.size()));
-    builder.append(")) incoming on (");
+    nCopiesToBuilder(builder, ",", "?", index - 1);
+    builder.append("))) as incoming on ");
     joinToBuilder(builder, " and ", keyCols, new StringBuilderUtil.Transform<String>() {
       @Override
       public void apply(StringBuilder builder, String col) {
         builder.append(tableName).append(".").append(escaped(col)).append("=incoming.").append(escaped(col));
       }
     });
-    builder.append(")");
     if (cols != null && cols.size() > 0) {
       builder.append(" when matched then update set ");
       joinToBuilder(builder, ",", cols, new StringBuilderUtil.Transform<String>() {
