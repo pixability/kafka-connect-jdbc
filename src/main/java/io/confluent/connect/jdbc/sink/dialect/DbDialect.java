@@ -23,6 +23,7 @@ import org.apache.kafka.connect.data.Time;
 import org.apache.kafka.connect.data.Timestamp;
 import org.apache.kafka.connect.errors.ConnectException;
 
+import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -82,15 +83,28 @@ public abstract class DbDialect {
     return builder.toString();
   }
 
-
   public String getUpsertQuery(final String table, final Collection<String> keyColumns, final Collection<String> columns) {
     throw new UnsupportedOperationException();
   }
 
-  public String getCreateQuery(String tableName, Collection<SinkRecordField> fields) {
+  public String getMergeQuery(final String table, final String tempTable,
+                              final Collection<String> keyColumns, String versionColumn,
+                              final Collection<String> columns) {
+    throw new UnsupportedOperationException();
+  }
+
+  public String getCopyQuery(final String tableName, final Collection<SinkRecordField> fields, final File avroFile) {
+    throw new UnsupportedOperationException();
+  }
+
+  public String getPutQuery(final String tableName, final File fileName) {
+    throw new UnsupportedOperationException();
+  }
+
+  public String getCreateQuery(String tableName, Collection<SinkRecordField> fields, boolean isTempTable) {
     final List<String> pkFieldNames = extractPrimaryKeyFieldNames(fields);
     final StringBuilder builder = new StringBuilder();
-    builder.append("CREATE TABLE ");
+    builder.append(getCreateSql(isTempTable)).append(" ");
     builder.append(escaped(tableName));
     builder.append(" (");
     writeColumnsSpec(builder, fields);
@@ -103,6 +117,14 @@ public abstract class DbDialect {
     }
     builder.append(")");
     return builder.toString();
+  }
+
+  protected String getCreateSql(boolean isTempTable) {
+    return isTempTable ? "CREATE TEMPORARY TABLE" : "CREATE TABLE";
+  }
+
+  public String getCreateQuery(String tableName, Collection<SinkRecordField> fields) {
+    return getCreateQuery(tableName, fields, false);
   }
 
   public List<String> getAlterTable(String tableName, Collection<SinkRecordField> fields) {

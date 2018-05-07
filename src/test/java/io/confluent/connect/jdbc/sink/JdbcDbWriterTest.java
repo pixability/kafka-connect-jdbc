@@ -68,7 +68,7 @@ public class JdbcDbWriterTest {
     final JdbcSinkConfig config = new JdbcSinkConfig(props);
     final DbDialect dbDialect = new SqliteDialect();
     final DbStructure dbStructure = new DbStructure(dbDialect);
-    return new JdbcDbWriter(config, dbDialect, dbStructure);
+    return new BufferedWriter(config, dbDialect, dbStructure);
   }
 
   @Test

@@ -22,7 +22,9 @@ import org.apache.kafka.connect.data.Decimal;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.Time;
 import org.apache.kafka.connect.data.Timestamp;
+import org.apache.kafka.connect.errors.ConnectException;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -81,12 +83,120 @@ public class SnowflakeDialect extends DbDialect {
   }
 
   @Override
+  protected String getCreateSql(boolean isTempTable) {
+    return isTempTable ? "CREATE OR REPLACE TEMPORARY TABLE" : "CREATE TABLE IF NOT EXISTS";
+  }
+  @Override
   public List<String> getAlterTable(String tableName, Collection<SinkRecordField> fields) {
     final List<String> queries = new ArrayList<>(fields.size());
     for (SinkRecordField field : fields) {
       queries.addAll(super.getAlterTable(tableName, Collections.singleton(field)));
     }
     return queries;
+  }
+
+  public String getMergeQuery(final String table, final String tempTable,
+                              final Collection<String> keyColumns, String versionColumn,
+                              final Collection<String> columns) {
+    final String tableName = escaped(table);
+    final String tempTableName = escaped(tempTable);
+
+    final StringBuilder builder = new StringBuilder();
+
+    builder.append("MERGE INTO ");
+    builder.append(tableName);
+    builder.append(" target USING (SELECT DISTINCT ");
+    joinToBuilder(builder, ",", keyColumns, columns, escaper());
+    builder.append(" FROM ");
+    builder.append(tempTableName);
+    builder.append(") source ON ");
+    joinToBuilder(builder, " and ", keyColumns, new StringBuilderUtil.Transform<String>() {
+      @Override
+      public void apply(StringBuilder builder, String col) {
+        builder.append("target.").append(escaped(col));
+        builder.append("=");
+        builder.append("source.").append(escaped(col));
+      }
+    });
+
+    if (columns != null && columns.size() > 0) {
+      builder.append(" WHEN MATCHED AND ");
+      builder.append("source.").append(escaped(versionColumn));
+      builder.append(" > ");
+      builder.append("target.").append(escaped(versionColumn));
+      builder.append(" THEN UPDATE SET ");
+      joinToBuilder(builder, ",", columns, new StringBuilderUtil.Transform<String>() {
+        @Override
+        public void apply(StringBuilder builder, String col) {
+          builder.append(tableName).append(".").append(escaped(col)).append("=source.").append(escaped(col));
+        }
+      });
+    }
+
+    builder.append(" WHEN NOT MATCHED THEN INSERT (");
+    joinToBuilder(builder, ",", keyColumns, columns, escaper());
+    builder.append(") VALUES (");
+    joinToBuilder(builder, ",", keyColumns, columns, prefixedEscaper("source."));
+    builder.append(")");
+
+    return builder.toString();
+  }
+
+  @Override
+  public String getPutQuery(final String tableName, final File avroFile) {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("PUT ");
+    builder.append("file://");
+    builder.append(avroFile.getAbsolutePath());
+    builder.append(" @%");
+    builder.append(escaped(tableName));
+    builder.append("/");
+    builder.append(avroFile.getName());
+    return builder.toString();
+  }
+
+  @Override
+  public String getCopyQuery(final String tableName, final Collection<SinkRecordField> fields, final File avroFile) {
+    ArrayList<String> columns = new ArrayList<>();
+    for (SinkRecordField field : fields) {
+      columns.add(field.name());
+    }
+
+    final StringBuilder builder = new StringBuilder();
+
+    builder.append("COPY INTO ").append(escaped(tableName)).append(" (");
+    joinToBuilder(builder, ",", columns, escaper());
+    builder.append(") FROM (SELECT ");
+    joinToBuilder(builder, ",", fields, new StringBuilderUtil.Transform<SinkRecordField>() {
+      @Override
+      public void apply(StringBuilder builder, SinkRecordField col) {
+        if (col.schemaName() != null) {
+          switch (col.schemaName()) {
+            case Time.LOGICAL_NAME:
+            case Date.LOGICAL_NAME:
+              throw new ConnectException("Unsupported type for column value: " + col.schemaType());
+            case Timestamp.LOGICAL_NAME:
+              builder.append("to_timestamp(cast($1:")
+                  .append(col.name())
+                  .append("/1000 as integer),0)");
+              return;
+            case Decimal.LOGICAL_NAME:
+              builder.append("$1:").append(col.name());
+              return;
+          }
+        }
+        switch (col.schemaType()) {
+          case BOOLEAN:
+            builder.append("cast($1:").append(col.name()).append(" as integer)");
+            return;
+        }
+        builder.append("$1:").append(col.name());
+      }
+    });
+    builder.append(" FROM @%").append(escaped(tableName));
+    builder.append("/").append(avroFile.getName());
+
+    return builder.toString();
   }
 
   @Override

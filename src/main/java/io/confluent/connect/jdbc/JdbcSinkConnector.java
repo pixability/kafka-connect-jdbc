@@ -36,6 +36,7 @@ public final class JdbcSinkConnector extends SinkConnector {
 
   private Map<String, String> configProps;
 
+  @Override
   public Class<? extends Task> taskClass() {
     return JdbcSinkTask.class;
   }

@@ -264,6 +264,6 @@ public class FieldsMetadataTest {
   }
 
   private static FieldsMetadata extract(JdbcSinkConfig.PrimaryKeyMode pkMode, List<String> pkFields, Set<String> whitelist, Schema keySchema, Schema valueSchema) {
-    return FieldsMetadata.extract("table", pkMode, pkFields, whitelist, keySchema, valueSchema);
+    return FieldsMetadata.extract("table", pkMode, pkFields, whitelist, null, keySchema, valueSchema);
   }
 }

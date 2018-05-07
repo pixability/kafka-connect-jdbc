@@ -22,17 +22,15 @@ import org.apache.kafka.connect.sink.SinkRecord;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 
 import io.confluent.connect.jdbc.sink.dialect.DbDialect;
 import io.confluent.connect.jdbc.util.CachedConnectionProvider;
 
-public class JdbcDbWriter {
+public abstract class JdbcDbWriter {
 
-  private final JdbcSinkConfig config;
-  private final DbDialect dbDialect;
-  private final DbStructure dbStructure;
+  final JdbcSinkConfig config;
+  final DbDialect dbDialect;
+  final DbStructure dbStructure;
   final CachedConnectionProvider cachedConnectionProvider;
 
   JdbcDbWriter(final JdbcSinkConfig config, DbDialect dbDialect, DbStructure dbStructure) {
@@ -48,25 +46,7 @@ public class JdbcDbWriter {
     };
   }
 
-  void write(final Collection<SinkRecord> records) throws SQLException {
-    final Connection connection = cachedConnectionProvider.getValidConnection();
-
-    final Map<String, BufferedRecords> bufferByTable = new HashMap<>();
-    for (SinkRecord record : records) {
-      final String table = destinationTable(record.topic());
-      BufferedRecords buffer = bufferByTable.get(table);
-      if (buffer == null) {
-        buffer = new BufferedRecords(config, table, dbDialect, dbStructure, connection);
-        bufferByTable.put(table, buffer);
-      }
-      buffer.add(record);
-    }
-    for (BufferedRecords buffer : bufferByTable.values()) {
-      buffer.flush();
-      buffer.close();
-    }
-    connection.commit();
-  }
+  abstract void write(final Collection<SinkRecord> records) throws SQLException;
 
   void closeQuietly() {
     cachedConnectionProvider.closeQuietly();

@@ -82,6 +82,13 @@
             <scope>provided</scope>
         </dependency>
 
+        <dependency>
+            <groupId>io.confluent</groupId>
+            <artifactId>kafka-connect-avro-converter</artifactId>
+            <version>${confluent.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
          <!-- JDBC drivers, only included in runtime so they get packaged -->
         <dependency>
             <groupId>org.xerial</groupId>

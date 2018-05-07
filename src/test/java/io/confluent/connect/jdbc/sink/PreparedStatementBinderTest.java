@@ -90,7 +90,7 @@ public class PreparedStatementBinderTest {
 
     List<String> pkFields = Collections.singletonList("long");
 
-    FieldsMetadata fieldsMetadata = FieldsMetadata.extract("people", pkMode, pkFields, Collections.<String>emptySet(), schemaPair);
+    FieldsMetadata fieldsMetadata = FieldsMetadata.extract("people", pkMode, pkFields, Collections.<String>emptySet(), null, schemaPair);
 
     PreparedStatement statement = mock(PreparedStatement.class);
 
@@ -142,7 +142,7 @@ public class PreparedStatementBinderTest {
 
         List<String> pkFields = Collections.singletonList("long");
 
-        FieldsMetadata fieldsMetadata = FieldsMetadata.extract("people", pkMode, pkFields, Collections.<String>emptySet(), schemaPair);
+        FieldsMetadata fieldsMetadata = FieldsMetadata.extract("people", pkMode, pkFields, Collections.<String>emptySet(), null, schemaPair);
 
         PreparedStatement statement = mock(PreparedStatement.class);
 
@@ -180,7 +180,7 @@ public class PreparedStatementBinderTest {
         List<String> pkFields = Collections.singletonList("long");
 
         FieldsMetadata fieldsMetadata = FieldsMetadata.extract("people", pkMode, pkFields,
-                Collections.<String>emptySet(), schemaPair);
+                Collections.<String>emptySet(), null, schemaPair);
 
         PreparedStatement statement = mock(PreparedStatement.class);
 

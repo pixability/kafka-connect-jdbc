@@ -35,8 +35,10 @@ public class JdbcSinkConfig extends AbstractConfig {
   public enum InsertMode {
     INSERT,
     UPSERT,
-    UPDATE;
-
+    UPDATE,
+    // Bulk-oriented loading schemes. Currently only supported in Snowflake dialect.
+    MERGE,
+    COPY;
   }
 
   public enum PrimaryKeyMode {
@@ -110,8 +112,27 @@ public class JdbcSinkConfig extends AbstractConfig {
       + "``upsert``\n"
       + "    Use the appropriate upsert semantics for the target database if it is supported by the connector, e.g. ``INSERT OR IGNORE``."
       + "``update``\n"
-      + "    Use the appropriate update semantics for the target database if it is supported by the connector, e.g. ``UPDATE``.";
+      + "    Use the appropriate update semantics for the target database if it is supported by the connector, e.g. ``UPDATE``."
+      + "``merge``\n"
+      + "    Use the appropriate bulk merge semantics for the target database if it is supported by the connector, e.g., ``MERGE INTO``."
+      + "``copy``\n"
+      + "    Use the appropriate bulk copy semantics for the target database if it supported by the connector, e.g., ``COPY INTO``.";
   private static final String INSERT_MODE_DISPLAY = "Insert Mode";
+
+  public static final String DBWRITER_CLASS = "dbwriter.class";
+  private static final String DBWRITER_CLASS_DEFAULT = BufferedWriter.class.getName();
+  private static final String DBWRITER_CLASS_DOC = "DbWriter strategy class.";
+  private static final String DBWRITER_CLASS_DISPLAY = "DbWriter Strategy Class";
+
+  public static final String SCHEMA_CACHE_SIZE = "schema.cache.size";
+  private static final int SCHEMA_CACHE_SIZE_DEFAULT = 1000;
+  private static final String SCHEMA_CACHE_SIZE_DOC = "Avro Schema cache size";
+  private static final String SCHEMA_CACHE_SIZE_DISPLAY = "Schema Cache Size";
+
+  public static final String AVRO_CODEC = "avro.codec";
+  private static final String AVRO_CODEC_DEFAULT = "null";
+  private static final String AVRO_CODEC_DOC = "Avro Codec";
+  private static final String AVRO_CODEC_DISPLAY = "Avro Codec";
 
   public static final String PK_FIELDS = "pk.fields";
   private static final String PK_FIELDS_DEFAULT = "";
@@ -149,6 +170,11 @@ public class JdbcSinkConfig extends AbstractConfig {
       + " while this configuration is applicable for the other columns.";
   private static final String FIELDS_WHITELIST_DISPLAY = "Fields Whitelist";
 
+  public static final String FIELDS_VERSION = "fields.version";
+  private static final String FIELDS_VERSION_DEFAULT = "version";
+  private static final String FIELDS_VERSION_DOC = "record version number field or semantic equivalent";
+  private static final String FIELDS_VERSION_DISPLAY = "Version Field Name";
+
   private static final ConfigDef.Range NON_NEGATIVE_INT_VALIDATOR = ConfigDef.Range.atLeast(0);
 
   private static final String CONNECTION_GROUP = "Connection";
@@ -175,6 +201,15 @@ public class JdbcSinkConfig extends AbstractConfig {
       .define(BATCH_SIZE, ConfigDef.Type.INT, BATCH_SIZE_DEFAULT, NON_NEGATIVE_INT_VALIDATOR,
               ConfigDef.Importance.MEDIUM, BATCH_SIZE_DOC,
               WRITES_GROUP, 2, ConfigDef.Width.SHORT, BATCH_SIZE_DISPLAY)
+      .define(DBWRITER_CLASS, ConfigDef.Type.CLASS, DBWRITER_CLASS_DEFAULT,
+              ConfigDef.Importance.HIGH, DBWRITER_CLASS_DOC,
+              WRITES_GROUP, 3, ConfigDef.Width.SHORT, DBWRITER_CLASS_DISPLAY)
+      .define(SCHEMA_CACHE_SIZE, ConfigDef.Type.INT, SCHEMA_CACHE_SIZE_DEFAULT,
+              ConfigDef.Importance.LOW, SCHEMA_CACHE_SIZE_DOC,
+              WRITES_GROUP, 4, ConfigDef.Width.SHORT, SCHEMA_CACHE_SIZE_DISPLAY)
+      .define(AVRO_CODEC, ConfigDef.Type.STRING, AVRO_CODEC_DEFAULT,
+              ConfigDef.Importance.LOW, AVRO_CODEC_DOC,
+              WRITES_GROUP, 5, ConfigDef.Width.SHORT, AVRO_CODEC_DISPLAY)
       // Data Mapping
       .define(TABLE_NAME_FORMAT, ConfigDef.Type.STRING, TABLE_NAME_FORMAT_DEFAULT,
               ConfigDef.Importance.MEDIUM, TABLE_NAME_FORMAT_DOC,
@@ -188,6 +223,9 @@ public class JdbcSinkConfig extends AbstractConfig {
       .define(FIELDS_WHITELIST, ConfigDef.Type.LIST, FIELDS_WHITELIST_DEFAULT,
               ConfigDef.Importance.MEDIUM, FIELDS_WHITELIST_DOC,
               DATAMAPPING_GROUP, 4, ConfigDef.Width.LONG, FIELDS_WHITELIST_DISPLAY)
+      .define(FIELDS_VERSION, ConfigDef.Type.STRING, FIELDS_VERSION_DEFAULT,
+              ConfigDef.Importance.MEDIUM, FIELDS_VERSION_DOC,
+              DATAMAPPING_GROUP, 5, ConfigDef.Width.SHORT, FIELDS_VERSION_DISPLAY)
       // DDL
       .define(AUTO_CREATE, ConfigDef.Type.BOOLEAN, AUTO_CREATE_DEFAULT,
               ConfigDef.Importance.MEDIUM, AUTO_CREATE_DOC,
@@ -216,6 +254,7 @@ public class JdbcSinkConfig extends AbstractConfig {
   public final PrimaryKeyMode pkMode;
   public final List<String> pkFields;
   public final Set<String> fieldsWhitelist;
+  public final String versionField;
 
   public JdbcSinkConfig(Map<?, ?> props) {
     super(CONFIG_DEF, props);
@@ -232,6 +271,7 @@ public class JdbcSinkConfig extends AbstractConfig {
     pkMode = PrimaryKeyMode.valueOf(getString(PK_MODE).toUpperCase());
     pkFields = getList(PK_FIELDS);
     fieldsWhitelist = new HashSet<>(getList(FIELDS_WHITELIST));
+    versionField = getString(FIELDS_VERSION);
   }
 
   private String getPasswordValue(String key) {

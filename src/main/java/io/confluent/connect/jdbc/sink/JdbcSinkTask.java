@@ -25,6 +25,8 @@ import org.apache.kafka.connect.sink.SinkTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Map;
@@ -50,7 +52,14 @@ public class JdbcSinkTask extends SinkTask {
     final DbDialect dbDialect = DbDialect.fromConnectionString(config.connectionUrl);
     final DbStructure dbStructure = new DbStructure(dbDialect);
     log.info("Initializing writer using SQL dialect: {}", dbDialect.getClass().getSimpleName());
-    writer = new JdbcDbWriter(config, dbDialect, dbStructure);
+
+    Class<?> clazz = config.getClass(JdbcSinkConfig.DBWRITER_CLASS);
+    try {
+      Constructor<?> ctor = clazz.getDeclaredConstructor(JdbcSinkConfig.class, DbDialect.class, DbStructure.class);
+      writer = (JdbcDbWriter) ctor.newInstance(config, dbDialect, dbStructure);
+    } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override

@@ -34,8 +34,9 @@ public class FieldsMetadata {
   public final Set<String> keyFieldNames;
   public final Set<String> nonKeyFieldNames;
   public final Map<String, SinkRecordField> allFields;
+  public final String versionFieldName;
 
-  private FieldsMetadata(Set<String> keyFieldNames, Set<String> nonKeyFieldNames, Map<String, SinkRecordField> allFields) {
+  private FieldsMetadata(Set<String> keyFieldNames, Set<String> nonKeyFieldNames, String versionFieldName, Map<String, SinkRecordField> allFields) {
     if ((keyFieldNames.size() + nonKeyFieldNames.size() != allFields.size())
         || !(allFields.keySet().containsAll(keyFieldNames) && allFields.keySet().containsAll(nonKeyFieldNames))) {
       throw new IllegalArgumentException(String.format(
@@ -45,6 +46,7 @@ public class FieldsMetadata {
     }
     this.keyFieldNames = keyFieldNames;
     this.nonKeyFieldNames = nonKeyFieldNames;
+    this.versionFieldName = versionFieldName;
     this.allFields = allFields;
   }
 
@@ -53,9 +55,10 @@ public class FieldsMetadata {
       final JdbcSinkConfig.PrimaryKeyMode pkMode,
       final List<String> configuredPkFields,
       final Set<String> fieldsWhitelist,
+      final String versionField,
       final SchemaPair schemaPair
   ) {
-    return extract(tableName, pkMode, configuredPkFields, fieldsWhitelist, schemaPair.keySchema, schemaPair.valueSchema);
+    return extract(tableName, pkMode, configuredPkFields, fieldsWhitelist, versionField, schemaPair.keySchema, schemaPair.valueSchema);
   }
 
   public static FieldsMetadata extract(
@@ -63,6 +66,7 @@ public class FieldsMetadata {
       final JdbcSinkConfig.PrimaryKeyMode pkMode,
       final List<String> configuredPkFields,
       final Set<String> fieldsWhitelist,
+      final String versionField,
       final Schema keySchema,
       final Schema valueSchema
   ) {
@@ -190,7 +194,7 @@ public class FieldsMetadata {
       throw new ConnectException("No fields found using key and value schemas for table: " + tableName);
     }
 
-    return new FieldsMetadata(keyFieldNames, nonKeyFieldNames, allFields);
+    return new FieldsMetadata(keyFieldNames, nonKeyFieldNames, versionField, allFields);
   }
 
   @Override
@@ -198,6 +202,7 @@ public class FieldsMetadata {
     return "FieldsMetadata{" +
            "keyFieldNames=" + keyFieldNames +
            ", nonKeyFieldNames=" + nonKeyFieldNames +
+           ", versionFieldName=" + versionFieldName +
            ", allFields=" + allFields +
            '}';
   }
