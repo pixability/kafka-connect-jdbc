@@ -16,6 +16,7 @@
 
 package io.confluent.connect.jdbc.sink.dialect;
 
+import com.amazonaws.auth.AWSCredentials;
 import org.apache.kafka.connect.data.Date;
 import org.apache.kafka.connect.data.Decimal;
 import org.apache.kafka.connect.data.Schema;
@@ -23,7 +24,6 @@ import org.apache.kafka.connect.data.Time;
 import org.apache.kafka.connect.data.Timestamp;
 import org.apache.kafka.connect.errors.ConnectException;
 
-import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -87,17 +87,19 @@ public abstract class DbDialect {
     throw new UnsupportedOperationException();
   }
 
-  public String getMergeQuery(final String table, final String tempTable,
-                              final Collection<String> keyColumns, String versionColumn,
+  public String getMergeQuery(final String table,
+                              final String tempTable,
+                              final Collection<String> keyColumns,
+                              final String versionColumn,
                               final Collection<String> columns) {
     throw new UnsupportedOperationException();
   }
 
-  public String getCopyQuery(final String tableName, final Collection<SinkRecordField> fields, final File avroFile) {
+  public String getCopyQuery(final String tableName, final Collection<SinkRecordField> fields, final String stageName, final String fileName) {
     throw new UnsupportedOperationException();
   }
 
-  public String getPutQuery(final String tableName, final File fileName) {
+  public String getStageQuery(final String stageName, final String bucketName, final String pathPrefix, final AWSCredentials credentials) {
     throw new UnsupportedOperationException();
   }
 

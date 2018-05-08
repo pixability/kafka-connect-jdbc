@@ -16,6 +16,9 @@
 
 package io.confluent.connect.jdbc.sink;
 
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.services.s3.AmazonS3;
+import io.confluent.connect.avro.AvroData;
 import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigException;
@@ -120,7 +123,7 @@ public class JdbcSinkConfig extends AbstractConfig {
   private static final String INSERT_MODE_DISPLAY = "Insert Mode";
 
   public static final String DBWRITER_CLASS = "dbwriter.class";
-  private static final String DBWRITER_CLASS_DEFAULT = BufferedWriter.class.getName();
+  private static final Class<? extends JdbcDbWriter> DBWRITER_CLASS_DEFAULT = BufferedWriter.class;
   private static final String DBWRITER_CLASS_DOC = "DbWriter strategy class.";
   private static final String DBWRITER_CLASS_DISPLAY = "DbWriter Strategy Class";
 
@@ -128,6 +131,24 @@ public class JdbcSinkConfig extends AbstractConfig {
   private static final int SCHEMA_CACHE_SIZE_DEFAULT = 1000;
   private static final String SCHEMA_CACHE_SIZE_DOC = "Avro Schema cache size";
   private static final String SCHEMA_CACHE_SIZE_DISPLAY = "Schema Cache Size";
+
+  public static final String S3_PART_SIZE = "s3.part.size";
+  private static final int S3_PART_SIZE_DEFAULT = 25 * 1024 * 1024;
+  private static final String S3_PART_SIZE_DOC = "S3 upload partition size";
+  private static final String S3_PART_SIZE_DISPLAY = "S3 Partition Size";
+
+  public static final String S3_BUCKET = "s3.bucket";
+  private static final String S3_BUCKET_DOC = "S3 bucket name";
+  private static final String S3_BUCKET_DISPLAY = "S3 Bucket";
+
+  public static final String S3_PREFIX = "s3.prefix";
+  private static final String S3_PREFIX_DOC = "S3 path prefix";
+  private static final String S3_PREFIX_DISPLAY = "S3 Prefix";
+
+  public static final String S3_REGION = "s3.region";
+  private static final String S3_REGION_DEFAULT = "us-east-1";
+  private static final String S3_REGION_DOC = "S3 Region";
+  private static final String S3_REGION_DISPLAY = "S3 Region";
 
   public static final String AVRO_CODEC = "avro.codec";
   private static final String AVRO_CODEC_DEFAULT = "null";
@@ -182,6 +203,7 @@ public class JdbcSinkConfig extends AbstractConfig {
   private static final String DATAMAPPING_GROUP = "Data Mapping";
   private static final String DDL_GROUP = "DDL Support";
   private static final String RETRIES_GROUP = "Retries";
+  private static final String S3_GROUP = "S3";
 
   public static final ConfigDef CONFIG_DEF = new ConfigDef()
       // Connection
@@ -239,7 +261,20 @@ public class JdbcSinkConfig extends AbstractConfig {
               RETRIES_GROUP, 1, ConfigDef.Width.SHORT, MAX_RETRIES_DISPLAY)
       .define(RETRY_BACKOFF_MS, ConfigDef.Type.INT, RETRY_BACKOFF_MS_DEFAULT, NON_NEGATIVE_INT_VALIDATOR,
               ConfigDef.Importance.MEDIUM, RETRY_BACKOFF_MS_DOC,
-              RETRIES_GROUP, 2, ConfigDef.Width.SHORT, RETRY_BACKOFF_MS_DISPLAY);
+              RETRIES_GROUP, 2, ConfigDef.Width.SHORT, RETRY_BACKOFF_MS_DISPLAY)
+      // S3
+      .define(S3_BUCKET, ConfigDef.Type.STRING, null,
+              ConfigDef.Importance.HIGH, S3_BUCKET_DOC,
+              S3_GROUP, 1, ConfigDef.Width.SHORT, S3_BUCKET_DISPLAY)
+      .define(S3_PART_SIZE, ConfigDef.Type.INT, S3_PART_SIZE_DEFAULT, NON_NEGATIVE_INT_VALIDATOR,
+              ConfigDef.Importance.MEDIUM, S3_PART_SIZE_DOC,
+              S3_GROUP, 2, ConfigDef.Width.SHORT, S3_PART_SIZE_DISPLAY)
+      .define(S3_REGION, ConfigDef.Type.STRING, S3_REGION_DEFAULT,
+              ConfigDef.Importance.HIGH, S3_REGION_DOC,
+              S3_GROUP, 3, ConfigDef.Width.SHORT, S3_REGION_DISPLAY)
+      .define(S3_PREFIX, ConfigDef.Type.STRING, null,
+              ConfigDef.Importance.LOW, S3_PREFIX_DOC,
+              S3_GROUP, 4, ConfigDef.Width.SHORT, S3_PREFIX_DISPLAY);
 
   public final String connectionUrl;
   public final String connectionUser;
@@ -255,6 +290,10 @@ public class JdbcSinkConfig extends AbstractConfig {
   public final List<String> pkFields;
   public final Set<String> fieldsWhitelist;
   public final String versionField;
+
+  protected transient AvroData avroData;
+  protected transient AmazonS3 s3;
+  protected transient AWSCredentials credentials;
 
   public JdbcSinkConfig(Map<?, ?> props) {
     super(CONFIG_DEF, props);

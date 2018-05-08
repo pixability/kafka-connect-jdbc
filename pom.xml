@@ -43,9 +43,9 @@
     </licenses>
 
     <scm>
-        <connection>scm:git:git://github.com/confluentinc/kafka-connect-jdbc.git</connection>
-        <developerConnection>scm:git:git@github.com:confluentinc/kafka-connect-jdbc.git</developerConnection>
-        <url>https://github.com/confluentinc/kafka-connect-jdbc</url>
+        <connection>scm:git:git://github.com/pixability/kafka-connect-jdbc.git</connection>
+        <developerConnection>scm:git:git@github.com:pixability/kafka-connect-jdbc.git</developerConnection>
+        <url>https://github.com/pixability/kafka-connect-jdbc</url>
         <tag>HEAD</tag>
     </scm>
 
@@ -64,6 +64,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.package.home>target/${project.artifactId}-${project.version}-package</project.package.home>
         <confluent.maven.repo>http://packages.confluent.io/maven/</confluent.maven.repo>
+        <aws.version>1.11.86</aws.version>
     </properties>
 
     <repositories>
@@ -73,6 +74,19 @@
             <url>${confluent.maven.repo}</url>
         </repository>
     </repositories>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.amazonaws</groupId>
+                <artifactId>aws-java-sdk-bom</artifactId>
+                <version>${aws.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+
+    </dependencyManagement>
 
     <dependencies>
         <dependency>
@@ -87,6 +101,11 @@
             <artifactId>kafka-connect-avro-converter</artifactId>
             <version>${confluent.version}</version>
             <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-s3</artifactId>
         </dependency>
 
          <!-- JDBC drivers, only included in runtime so they get packaged -->

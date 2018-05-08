@@ -16,6 +16,8 @@
 
 package io.confluent.connect.jdbc.sink;
 
+import com.amazonaws.auth.EnvironmentVariableCredentialsProvider;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.connect.errors.ConnectException;
@@ -32,6 +34,7 @@ import java.util.Collection;
 import java.util.Map;
 
 import io.confluent.connect.jdbc.sink.dialect.DbDialect;
+import io.confluent.connect.avro.AvroData;
 
 public class JdbcSinkTask extends SinkTask {
   private static final Logger log = LoggerFactory.getLogger(JdbcSinkTask.class);
@@ -44,6 +47,14 @@ public class JdbcSinkTask extends SinkTask {
   public void start(final Map<String, String> props) {
     log.info("Starting task");
     config = new JdbcSinkConfig(props);
+    config.avroData = new AvroData(config.getInt(JdbcSinkConfig.SCHEMA_CACHE_SIZE));
+    EnvironmentVariableCredentialsProvider credentialsProvider = new EnvironmentVariableCredentialsProvider();
+    config.credentials = credentialsProvider.getCredentials();
+    config.s3 = AmazonS3ClientBuilder.standard()
+        .withRegion(config.getString(JdbcSinkConfig.S3_REGION))
+        .withPathStyleAccessEnabled(true)
+        .withCredentials(credentialsProvider)
+        .build();
     initWriter();
     remainingRetries = config.maxRetries;
   }
@@ -53,10 +64,10 @@ public class JdbcSinkTask extends SinkTask {
     final DbStructure dbStructure = new DbStructure(dbDialect);
     log.info("Initializing writer using SQL dialect: {}", dbDialect.getClass().getSimpleName());
 
-    Class<?> clazz = config.getClass(JdbcSinkConfig.DBWRITER_CLASS);
+    Class<? extends JdbcDbWriter> clazz = (Class<? extends JdbcDbWriter>) config.getClass(JdbcSinkConfig.DBWRITER_CLASS);
     try {
-      Constructor<?> ctor = clazz.getDeclaredConstructor(JdbcSinkConfig.class, DbDialect.class, DbStructure.class);
-      writer = (JdbcDbWriter) ctor.newInstance(config, dbDialect, dbStructure);
+      Constructor<? extends JdbcDbWriter> ctor = clazz.getDeclaredConstructor(JdbcSinkConfig.class, DbDialect.class, DbStructure.class);
+      writer = ctor.newInstance(config, dbDialect, dbStructure);
     } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
       throw new RuntimeException(e);
     }

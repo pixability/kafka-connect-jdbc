@@ -16,6 +16,7 @@
 
 package io.confluent.connect.jdbc.sink.dialect;
 
+import com.amazonaws.auth.AWSCredentials;
 import io.confluent.connect.jdbc.sink.metadata.SinkRecordField;
 import org.apache.kafka.connect.data.Date;
 import org.apache.kafka.connect.data.Decimal;
@@ -24,7 +25,6 @@ import org.apache.kafka.connect.data.Time;
 import org.apache.kafka.connect.data.Timestamp;
 import org.apache.kafka.connect.errors.ConnectException;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -86,6 +86,7 @@ public class SnowflakeDialect extends DbDialect {
   protected String getCreateSql(boolean isTempTable) {
     return isTempTable ? "CREATE OR REPLACE TEMPORARY TABLE" : "CREATE TABLE IF NOT EXISTS";
   }
+
   @Override
   public List<String> getAlterTable(String tableName, Collection<SinkRecordField> fields) {
     final List<String> queries = new ArrayList<>(fields.size());
@@ -95,8 +96,34 @@ public class SnowflakeDialect extends DbDialect {
     return queries;
   }
 
-  public String getMergeQuery(final String table, final String tempTable,
-                              final Collection<String> keyColumns, String versionColumn,
+  @Override
+  public String getStageQuery(final String stageName, final String bucketName, final String pathPrefix, final AWSCredentials credentials) {
+    final StringBuilder builder = new StringBuilder();
+
+    builder.append("CREATE OR REPLACE STAGE ").append(stageName);
+
+    builder.append(" URL='s3://").append(bucketName);
+    if (pathPrefix != null && !pathPrefix.isEmpty()) {
+      builder.append("/").append(pathPrefix);
+    }
+    builder.append("'");
+
+    builder.append(" CREDENTIALS=(aws_key_id='")
+        .append(credentials.getAWSAccessKeyId())
+        .append("' aws_secret_key='")
+        .append(credentials.getAWSSecretKey())
+        .append("')");
+
+    builder.append(" FILE_FORMAT=(TYPE=AVRO)");
+
+    return builder.toString();
+  }
+
+  @Override
+  public String getMergeQuery(final String table,
+                              final String tempTable,
+                              final Collection<String> keyColumns,
+                              final String versionColumn,
                               final Collection<String> columns) {
     final String tableName = escaped(table);
     final String tempTableName = escaped(tempTable);
@@ -120,15 +147,18 @@ public class SnowflakeDialect extends DbDialect {
     });
 
     if (columns != null && columns.size() > 0) {
-      builder.append(" WHEN MATCHED AND ");
-      builder.append("source.").append(escaped(versionColumn));
-      builder.append(" > ");
-      builder.append("target.").append(escaped(versionColumn));
+      builder.append(" WHEN MATCHED");
+      if (versionColumn != null && !versionColumn.isEmpty()) {
+        builder.append(" AND ");
+        builder.append("source.").append(escaped(versionColumn));
+        builder.append(" > ");
+        builder.append("target.").append(escaped(versionColumn));
+      }
       builder.append(" THEN UPDATE SET ");
       joinToBuilder(builder, ",", columns, new StringBuilderUtil.Transform<String>() {
         @Override
         public void apply(StringBuilder builder, String col) {
-          builder.append(tableName).append(".").append(escaped(col)).append("=source.").append(escaped(col));
+          builder.append(escaped(col)).append("=source.").append(escaped(col));
         }
       });
     }
@@ -143,20 +173,7 @@ public class SnowflakeDialect extends DbDialect {
   }
 
   @Override
-  public String getPutQuery(final String tableName, final File avroFile) {
-    final StringBuilder builder = new StringBuilder();
-    builder.append("PUT ");
-    builder.append("file://");
-    builder.append(avroFile.getAbsolutePath());
-    builder.append(" @%");
-    builder.append(escaped(tableName));
-    builder.append("/");
-    builder.append(avroFile.getName());
-    return builder.toString();
-  }
-
-  @Override
-  public String getCopyQuery(final String tableName, final Collection<SinkRecordField> fields, final File avroFile) {
+  public String getCopyQuery(final String tableName, final Collection<SinkRecordField> fields, final String stageName, final String fileName) {
     ArrayList<String> columns = new ArrayList<>();
     for (SinkRecordField field : fields) {
       columns.add(field.name());
@@ -193,8 +210,8 @@ public class SnowflakeDialect extends DbDialect {
         builder.append("$1:").append(col.name());
       }
     });
-    builder.append(" FROM @%").append(escaped(tableName));
-    builder.append("/").append(avroFile.getName());
+    builder.append(" FROM @").append(stageName).append(") FILES=(");
+    builder.append("'/").append(fileName).append("')");
 
     return builder.toString();
   }
