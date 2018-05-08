@@ -52,10 +52,10 @@ public class BulkWriter extends JdbcDbWriter {
     private final AWSCredentials credentials;
     private final String bucketName;
     private final String pathPrefix;
-    private final String topicName;
     private final int partSize;
     private final String versionColumn;
     private final CodecFactory avroCodec;
+    private final String stageName;
 
     private SchemaPair currentSchemaPair;
     private FieldsMetadata fieldsMetadata;
@@ -63,10 +63,10 @@ public class BulkWriter extends JdbcDbWriter {
     private S3OutputStream s3OutputStream;
     private String avroFile;
 
-    Integer kafkaPartition;
-    long kafkaOffset;
+    private Integer kafkaPartition;
+    private long kafkaOffset;
 
-    int recordCount;
+    private int recordCount;
 
     private final DataFileWriter<Object> writer = new DataFileWriter<>(new GenericDatumWriter<>());
 
@@ -84,8 +84,7 @@ public class BulkWriter extends JdbcDbWriter {
     // 6. MERGE INTO tableName USING (SELECT DISTINCT columns FROM tempTable)
     //      ON ... WHEN MATCHED ... WHEN NOT MATCHED ...
 
-    AvroFileWriter(JdbcSinkConfig config, String topicName, String tableName, DbDialect dbDialect, DbStructure dbStructure, Connection connection) {
-      this.topicName = topicName;
+    AvroFileWriter(JdbcSinkConfig config, String tableName, DbDialect dbDialect, DbStructure dbStructure, Connection connection) {
       this.tableName = tableName;
       this.config = config;
       this.dbDialect = dbDialect;
@@ -99,12 +98,13 @@ public class BulkWriter extends JdbcDbWriter {
       this.bucketName = config.getString(JdbcSinkConfig.S3_BUCKET);
       this.pathPrefix = config.getString(JdbcSinkConfig.S3_PREFIX);
       this.partSize = config.getInt(JdbcSinkConfig.S3_PART_SIZE);
+      this.stageName = this.tableName.toUpperCase();
     }
 
     void add(SinkRecord record) throws SQLException, IOException {
       final SchemaPair schemaPair = new SchemaPair(record.keySchema(), record.valueSchema());
 
-      if (currentSchemaPair != null && !schemaPair.equals(currentSchemaPair)) {
+      if (currentSchemaPair != null && !schemaPair.valueSchema.equals(currentSchemaPair.valueSchema)) {
         // flush and close avro data file
         commit();
 
@@ -122,6 +122,12 @@ public class BulkWriter extends JdbcDbWriter {
 
         kafkaPartition = record.kafkaPartition();
         kafkaOffset = record.kafkaOffset();
+
+        Statement statement = connection.createStatement();
+        String createStageSql = dbDialect.getStageQuery(stageName, bucketName, pathPrefix, credentials);
+        log.debug("createStageSql: {}", createStageSql);
+        statement.execute(createStageSql);
+        statement.close();
 
         open();
       }
@@ -143,12 +149,6 @@ public class BulkWriter extends JdbcDbWriter {
 
       // generate and execute put - copy - merge sequence
       Statement statement = connection.createStatement();
-      String stageName, createStageSql, copySql;
-
-      stageName = tableName.toUpperCase();
-      createStageSql = dbDialect.getStageQuery(stageName, bucketName, pathPrefix, credentials);
-      log.debug("createStageSql: {}", createStageSql);
-      statement.addBatch(createStageSql);
 
       switch (config.insertMode) {
         case MERGE:
@@ -160,14 +160,9 @@ public class BulkWriter extends JdbcDbWriter {
           log.debug("createTempSql: {}", createTempSql);
           statement.addBatch(createTempSql);
 
-          stageName = tableName.toUpperCase();
-          createStageSql = dbDialect.getStageQuery(stageName, bucketName, pathPrefix, credentials);
-          log.debug("createStageSql: {}", createStageSql);
-          statement.addBatch(createStageSql);
-
-          copySql = dbDialect.getCopyQuery(tempTableName, fieldsMetadata.allFields.values(), stageName, avroFile);
-          log.debug("copyTempSql: {}", copySql);
-          statement.addBatch(copySql);
+          String copyTempSql = dbDialect.getCopyQuery(tempTableName, fieldsMetadata.allFields.values(), stageName, avroFile);
+          log.debug("copyTempSql: {}", copyTempSql);
+          statement.addBatch(copyTempSql);
 
           String mergeIntoSql = dbDialect.getMergeQuery(tableName, tempTableName,
               fieldsMetadata.keyFieldNames, versionColumn, fieldsMetadata.nonKeyFieldNames);
@@ -177,7 +172,7 @@ public class BulkWriter extends JdbcDbWriter {
           break;
 
         case COPY:
-          copySql = dbDialect.getCopyQuery(tableName, fieldsMetadata.allFields.values(), stageName, avroFile);
+          String copySql = dbDialect.getCopyQuery(tableName, fieldsMetadata.allFields.values(), stageName, avroFile);
           log.debug("copyTempSql: {}", copySql);
           statement.addBatch(copySql);
 
@@ -186,6 +181,7 @@ public class BulkWriter extends JdbcDbWriter {
 
       int[] updateCounts = statement.executeBatch();
       log.debug("Got updateCounts={}", updateCounts);
+      statement.close();
     }
 
     private void close() throws IOException {
@@ -195,7 +191,7 @@ public class BulkWriter extends JdbcDbWriter {
     }
 
     private void open() throws IOException {
-      avroFile = String.format("%s/%s_%d_%d.avro", topicName, tableName, kafkaPartition, kafkaOffset);
+      avroFile = String.format("%s_%d_%d.avro", tableName, kafkaPartition, kafkaOffset);
 
       String bucketKey = (pathPrefix != null && !pathPrefix.isEmpty()) ? pathPrefix + "/" + avroFile : avroFile;
 
@@ -222,7 +218,7 @@ public class BulkWriter extends JdbcDbWriter {
       final String table = destinationTable(record.topic());
       AvroFileWriter writer = bufferByTable.get(table);
       if (writer == null) {
-        writer = new AvroFileWriter(config, record.topic(), table, dbDialect, dbStructure, connection);
+        writer = new AvroFileWriter(config, table, dbDialect, dbStructure, connection);
         bufferByTable.put(table, writer);
       }
       try {
