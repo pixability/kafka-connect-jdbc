@@ -149,8 +149,8 @@ class S3OutputStream extends OutputStream {
     try {
       return new MultipartUpload(s3.initiateMultipartUpload(initRequest).getUploadId());
     } catch (AmazonClientException e) {
-      // TODO: elaborate on the exception interpretation. If this is an AmazonServiceException,
-      // there's more info to be extracted.
+      // TODO: Elaborate on the exception interpretation.
+      // TODO: If this is an AmazonServiceException there's more info to be extracted.
       throw new IOException("Unable to initiate MultipartUpload: " + e, e);
     }
   }
