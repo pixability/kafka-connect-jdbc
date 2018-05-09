@@ -48,7 +48,8 @@ public class JdbcSinkTask extends SinkTask {
     log.info("Starting task");
     config = new JdbcSinkConfig(props);
     config.avroData = new AvroData(config.getInt(JdbcSinkConfig.SCHEMA_CACHE_SIZE));
-    EnvironmentVariableCredentialsProvider credentialsProvider = new EnvironmentVariableCredentialsProvider();
+    EnvironmentVariableCredentialsProvider credentialsProvider =
+        new EnvironmentVariableCredentialsProvider();
     config.credentials = credentialsProvider.getCredentials();
     config.s3 = AmazonS3ClientBuilder.standard()
         .withRegion(config.getString(JdbcSinkConfig.S3_REGION))
@@ -64,11 +65,14 @@ public class JdbcSinkTask extends SinkTask {
     final DbStructure dbStructure = new DbStructure(dbDialect);
     log.info("Initializing writer using SQL dialect: {}", dbDialect.getClass().getSimpleName());
 
-    Class<? extends JdbcDbWriter> clazz = (Class<? extends JdbcDbWriter>) config.getClass(JdbcSinkConfig.DBWRITER_CLASS);
+    Class<? extends JdbcDbWriter> clazz = (Class<? extends JdbcDbWriter>)
+        config.getClass(JdbcSinkConfig.DBWRITER_CLASS);
     try {
-      Constructor<? extends JdbcDbWriter> ctor = clazz.getDeclaredConstructor(JdbcSinkConfig.class, DbDialect.class, DbStructure.class);
+      Constructor<? extends JdbcDbWriter> ctor = clazz.getDeclaredConstructor(
+          JdbcSinkConfig.class, DbDialect.class, DbStructure.class);
       writer = ctor.newInstance(config, dbDialect, dbStructure);
-    } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
+    } catch (NoSuchMethodException | InstantiationException
+        | IllegalAccessException | InvocationTargetException e) {
       throw new RuntimeException(e);
     }
   }

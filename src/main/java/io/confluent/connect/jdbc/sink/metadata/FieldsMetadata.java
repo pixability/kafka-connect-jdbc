@@ -135,14 +135,9 @@ public class FieldsMetadata {
       );
     }
 
-    if ((versionField != null && !versionField.isEmpty()) && !allFields.contains(versionField)) {
-      //TODO: should we really raise an exception here
-      throw new ConnectionException("No matching version field found for " + versionField);
-      //TODO: or just disregard -- may want to make whether we care or not 
-      //a function of the pkMode...
-      //But for now since we default the configuration setting to "version" lets
-      //just carry on without a version field.
-      ///versionField = null;
+    if ((versionField != null && !versionField.isEmpty()) && !allFields.containsKey(versionField)) {
+      //TODO: should we really raise an exception here or just disregard
+      throw new ConnectException("No matching version field found for " + versionField);
     }
 
     return new FieldsMetadata(keyFieldNames, nonKeyFieldNames, versionField, allFields);
@@ -281,19 +276,11 @@ public class FieldsMetadata {
 
   @Override
   public String toString() {
-<<<<<<< HEAD
-    return "FieldsMetadata{" +
-           "keyFieldNames=" + keyFieldNames +
-           ", nonKeyFieldNames=" + nonKeyFieldNames +
-           ", versionFieldName=" + versionFieldName +
-           ", allFields=" + allFields +
-           '}';
-=======
     return "FieldsMetadata{"
-           + "keyFieldNames=" + keyFieldNames
-           + ", nonKeyFieldNames=" + nonKeyFieldNames
-           + ", allFields=" + allFields
-           + '}';
->>>>>>> 4.1.0-confluentinc
+        + "keyFieldNames=" + keyFieldNames
+        + ", nonKeyFieldNames=" + nonKeyFieldNames
+        + ", versionFieldName=" + versionFieldName
+        + ", allFields=" + allFields
+        + "}";
   }
 }

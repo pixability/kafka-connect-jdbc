@@ -109,7 +109,8 @@ class S3OutputStream extends OutputStream {
 
   public void commit() throws IOException {
     if (closed) {
-      log.warn("Tried to commit data for bucket '{}' key '{}' on a closed stream. Ignoring.", bucket, key);
+      log.warn("Tried to commit data for bucket '{}' key '{}' "
+          + "on a closed stream. Ignoring.", bucket, key);
       return;
     }
 
@@ -120,7 +121,8 @@ class S3OutputStream extends OutputStream {
       multiPartUpload.complete();
       log.debug("Upload complete for bucket '{}' key '{}'", bucket, key);
     } catch (Exception e) {
-      log.error("Multipart upload failed to complete for bucket '{}' key '{}'", bucket, key);
+      log.error("Multipart upload failed to complete for bucket"
+          + " '{}' key '{}'", bucket, key);
       throw new DataException("Multipart upload failed to complete.", e);
     } finally {
       buffer.clear();
@@ -160,7 +162,8 @@ class S3OutputStream extends OutputStream {
     public MultipartUpload(String uploadId) {
       this.uploadId = uploadId;
       this.partETags = new ArrayList<>();
-      log.debug("Initiated multi-part upload for bucket '{}' key '{}' with id '{}'", bucket, key, uploadId);
+      log.debug("Initiated multi-part upload for bucket "
+          + "'{}' key '{}' with id '{}'", bucket, key, uploadId);
     }
 
     public void uploadPart(ByteArrayInputStream inputStream, int partSize) {

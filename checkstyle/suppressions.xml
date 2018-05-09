@@ -7,7 +7,7 @@
 <suppressions>
 
     <suppress checks="CyclomaticComplexity"
-              files="(BufferedRecords|DataConverter|DbDialect|FieldsMetadata|HanaDialect|JdbcSourceTask|MySqlDialect|OracleDialect|PostgreSqlDialect|PreparedStatementBinder|SqlServerDialect|SqliteDialect|TimestampIncrementingTableQuerier|VerticaDialect).java"/>
+              files="(BufferedRecords|DataConverter|DbDialect|FieldsMetadata|HanaDialect|JdbcSourceTask|MySqlDialect|OracleDialect|PostgreSqlDialect|PreparedStatementBinder|SqlServerDialect|SqliteDialect|TimestampIncrementingTableQuerier|VerticaDialect|SnowflakeDialect).java"/>
 
     <suppress checks="ClassDataAbstractionCoupling"
               files="(DbDialect|JdbcSourceTask).java"/>
@@ -20,4 +20,8 @@
 
     <suppress checks="MethodLength"
               files="DataConverter.java"/>
+
+    <suppress checks="BooleanExpressionComplexity"
+              files="S3OutputStream.java"/>
+
 </suppressions>

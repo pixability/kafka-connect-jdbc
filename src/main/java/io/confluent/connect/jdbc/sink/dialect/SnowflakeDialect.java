@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.Map;
 
 import static io.confluent.connect.jdbc.sink.dialect.StringBuilderUtil.joinToBuilder;
-import static io.confluent.connect.jdbc.sink.dialect.StringBuilderUtil.nCopiesToBuilder;
+import static io.confluent.connect.jdbc.sink.dialect.StringBuilderUtil.copiesToBuilder;
 
 public class SnowflakeDialect extends DbDialect {
   public SnowflakeDialect() {
@@ -51,6 +51,8 @@ public class SnowflakeDialect extends DbDialect {
           return "TIME";
         case Timestamp.LOGICAL_NAME:
           return "TIMESTAMP_LTZ";
+        default:
+          break;
       }
     }
     switch (type) {
@@ -78,6 +80,8 @@ public class SnowflakeDialect extends DbDialect {
         return "OBJECT";
       case STRUCT:
         return "VARIANT";
+      default:
+        break;
     }
     return super.getSqlType(schemaName, parameters, type);
   }
@@ -97,7 +101,10 @@ public class SnowflakeDialect extends DbDialect {
   }
 
   @Override
-  public String getStageQuery(final String stageName, final String bucketName, final String pathPrefix, final AWSCredentials credentials) {
+  public String getStageQuery(final String stageName,
+                              final String bucketName,
+                              final String pathPrefix,
+                              final AWSCredentials credentials) {
     final StringBuilder builder = new StringBuilder();
 
     builder.append("CREATE OR REPLACE STAGE ").append(stageName);
@@ -173,7 +180,10 @@ public class SnowflakeDialect extends DbDialect {
   }
 
   @Override
-  public String getCopyQuery(final String tableName, final Collection<SinkRecordField> fields, final String stageName, final String fileName) {
+  public String getCopyQuery(final String tableName,
+                             final Collection<SinkRecordField> fields,
+                             final String stageName,
+                             final String fileName) {
     ArrayList<String> columns = new ArrayList<>();
     for (SinkRecordField field : fields) {
       columns.add(field.name());
@@ -191,7 +201,8 @@ public class SnowflakeDialect extends DbDialect {
           switch (col.schemaName()) {
             case Time.LOGICAL_NAME:
             case Date.LOGICAL_NAME:
-              throw new ConnectException("Unsupported type for column value: " + col.schemaType());
+              throw new ConnectException(
+                  "Unsupported type for column value: " + col.schemaType());
             case Timestamp.LOGICAL_NAME:
               builder.append("to_timestamp(cast($1:")
                   .append(col.name())
@@ -200,12 +211,16 @@ public class SnowflakeDialect extends DbDialect {
             case Decimal.LOGICAL_NAME:
               builder.append("$1:").append(col.name());
               return;
+            default:
+              break;
           }
         }
         switch (col.schemaType()) {
           case BOOLEAN:
             builder.append("cast($1:").append(col.name()).append(" as integer)");
             return;
+          default:
+            break;
         }
         builder.append("$1:").append(col.name());
       }
@@ -217,7 +232,9 @@ public class SnowflakeDialect extends DbDialect {
   }
 
   @Override
-  public String getUpsertQuery(final String table, Collection<String> keyCols, Collection<String> cols) {
+  public String getUpsertQuery(final String table,
+                               Collection<String> keyCols,
+                               Collection<String> cols) {
     final StringBuilder builder = new StringBuilder();
     builder.append("merge into ");
     final String tableName = escaped(table);
@@ -225,24 +242,33 @@ public class SnowflakeDialect extends DbDialect {
     builder.append(" using (select ");
     int index = 1;
     for (String keyCol : keyCols) {
-      if (index > 1) builder.append(',');
+      if (index > 1) {
+        builder.append(',');
+      }
       builder.append('$').append(index).append(" as ").append(escaped(keyCol));
       index++;
     }
     if (cols != null) {
       for (String col : cols) {
-        if (keyCols.size() > 0) builder.append(',');
+        if (keyCols.size() > 0) {
+          builder.append(',');
+        }
         builder.append('$').append(index).append(" as ").append(escaped(col));
         index++;
       }
     }
     builder.append(" from (values (");
-    nCopiesToBuilder(builder, ",", "?", index - 1);
+    copiesToBuilder(builder, ",", "?", index - 1);
     builder.append("))) as incoming on ");
     joinToBuilder(builder, " and ", keyCols, new StringBuilderUtil.Transform<String>() {
       @Override
       public void apply(StringBuilder builder, String col) {
-        builder.append(tableName).append(".").append(escaped(col)).append("=incoming.").append(escaped(col));
+        builder
+            .append(tableName)
+            .append(".")
+            .append(escaped(col))
+            .append("=incoming.")
+            .append(escaped(col));
       }
     });
     if (cols != null && cols.size() > 0) {
@@ -250,7 +276,12 @@ public class SnowflakeDialect extends DbDialect {
       joinToBuilder(builder, ",", cols, new StringBuilderUtil.Transform<String>() {
         @Override
         public void apply(StringBuilder builder, String col) {
-          builder.append(tableName).append(".").append(escaped(col)).append("=incoming.").append(escaped(col));
+          builder
+              .append(tableName)
+              .append(".")
+              .append(escaped(col))
+              .append("=incoming.")
+              .append(escaped(col));
         }
       });
     }

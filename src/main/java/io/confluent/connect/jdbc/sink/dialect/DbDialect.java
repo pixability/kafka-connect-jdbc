@@ -107,15 +107,27 @@ public abstract class DbDialect {
     throw new UnsupportedOperationException();
   }
 
-  public String getCopyQuery(final String tableName, final Collection<SinkRecordField> fields, final String stageName, final String fileName) {
+  public String getCopyQuery(final String tableName,
+                             final Collection<SinkRecordField> fields,
+                             final String stageName,
+                             final String fileName) {
     throw new UnsupportedOperationException();
   }
 
-  public String getStageQuery(final String stageName, final String bucketName, final String pathPrefix, final AWSCredentials credentials) {
+  public String getStageQuery(final String stageName,
+                              final String bucketName,
+                              final String pathPrefix,
+                              final AWSCredentials credentials) {
     throw new UnsupportedOperationException();
   }
 
-  public String getCreateQuery(String tableName, Collection<SinkRecordField> fields, boolean isTempTable) {
+  public String getCreateQuery(String tableName, Collection<SinkRecordField> fields) {
+    return getCreateQuery(tableName, fields, false);
+  }
+
+  public String getCreateQuery(String tableName,
+                               Collection<SinkRecordField> fields,
+                               boolean isTempTable) {
     final List<String> pkFieldNames = extractPrimaryKeyFieldNames(fields);
     final StringBuilder builder = new StringBuilder();
     builder.append(getCreateSql(isTempTable)).append(" ");
@@ -135,10 +147,6 @@ public abstract class DbDialect {
 
   protected String getCreateSql(boolean isTempTable) {
     return isTempTable ? "CREATE TEMPORARY TABLE" : "CREATE TABLE";
-  }
-
-  public String getCreateQuery(String tableName, Collection<SinkRecordField> fields) {
-    return getCreateQuery(tableName, fields, false);
   }
 
   public List<String> getAlterTable(String tableName, Collection<SinkRecordField> fields) {

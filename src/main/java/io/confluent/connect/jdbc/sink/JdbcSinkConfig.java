@@ -211,8 +211,8 @@ public class JdbcSinkConfig extends AbstractConfig {
   private static final String FIELDS_WHITELIST_DISPLAY = "Fields Whitelist";
 
   public static final String FIELDS_VERSION = "fields.version";
-  private static final String FIELDS_VERSION_DEFAULT = "version";
-  private static final String FIELDS_VERSION_DOC = "record version number field or semantic equivalent";
+  private static final String FIELDS_VERSION_DOC =
+      "record version number field or semantic equivalent";
   private static final String FIELDS_VERSION_DISPLAY = "Version Field Name";
 
   private static final ConfigDef.Range NON_NEGATIVE_INT_VALIDATOR = ConfigDef.Range.atLeast(0);
@@ -266,7 +266,7 @@ public class JdbcSinkConfig extends AbstractConfig {
       .define(FIELDS_WHITELIST, ConfigDef.Type.LIST, FIELDS_WHITELIST_DEFAULT,
               ConfigDef.Importance.MEDIUM, FIELDS_WHITELIST_DOC,
               DATAMAPPING_GROUP, 4, ConfigDef.Width.LONG, FIELDS_WHITELIST_DISPLAY)
-      .define(FIELDS_VERSION, ConfigDef.Type.STRING, FIELDS_VERSION_DEFAULT,
+      .define(FIELDS_VERSION, ConfigDef.Type.STRING, null,
               ConfigDef.Importance.MEDIUM, FIELDS_VERSION_DOC,
               DATAMAPPING_GROUP, 5, ConfigDef.Width.SHORT, FIELDS_VERSION_DISPLAY)
       // DDL

@@ -39,7 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class BulkWriter extends JdbcDbWriter {
-  final static Logger log = LoggerFactory.getLogger(BulkWriter.class);
+  static final Logger log = LoggerFactory.getLogger(BulkWriter.class);
 
   static final class AvroFileWriter {
     private final String tableName;
@@ -84,7 +84,11 @@ public class BulkWriter extends JdbcDbWriter {
     // 6. MERGE INTO tableName USING (SELECT DISTINCT columns FROM tempTable)
     //      ON ... WHEN MATCHED ... WHEN NOT MATCHED ...
 
-    AvroFileWriter(JdbcSinkConfig config, String tableName, DbDialect dbDialect, DbStructure dbStructure, Connection connection) {
+    AvroFileWriter(JdbcSinkConfig config,
+                   String tableName,
+                   DbDialect dbDialect,
+                   DbStructure dbStructure,
+                   Connection connection) {
       this.tableName = tableName;
       this.config = config;
       this.dbDialect = dbDialect;
@@ -104,7 +108,8 @@ public class BulkWriter extends JdbcDbWriter {
     void add(SinkRecord record) throws SQLException, IOException {
       final SchemaPair schemaPair = new SchemaPair(record.keySchema(), record.valueSchema());
 
-      if (currentSchemaPair != null && !schemaPair.valueSchema.equals(currentSchemaPair.valueSchema)) {
+      if (currentSchemaPair != null
+          && !schemaPair.valueSchema.equals(currentSchemaPair.valueSchema)) {
         // flush and close avro data file
         commit();
 
@@ -124,7 +129,8 @@ public class BulkWriter extends JdbcDbWriter {
         kafkaOffset = record.kafkaOffset();
 
         Statement statement = connection.createStatement();
-        String createStageSql = dbDialect.getStageQuery(stageName, bucketName, pathPrefix, credentials);
+        String createStageSql = dbDialect.getStageQuery(
+            stageName, bucketName, pathPrefix, credentials);
         log.debug("createStageSql: {}", createStageSql);
         statement.execute(createStageSql);
         statement.close();
@@ -142,7 +148,9 @@ public class BulkWriter extends JdbcDbWriter {
     }
 
     void commit() throws SQLException, IOException {
-      if (recordCount == 0) return;
+      if (recordCount == 0) {
+        return;
+      }
 
       // flush and close avro data file
       close();
@@ -153,14 +161,17 @@ public class BulkWriter extends JdbcDbWriter {
       switch (config.insertMode) {
         case MERGE:
           // copy target is a temporary table
-          String tempTableName = String.format("temp_%s_%d_%d_", tableName, kafkaPartition, kafkaOffset);
+          String tempTableName = String.format("temp_%s_%d_%d_",
+              tableName, kafkaPartition, kafkaOffset);
           log.debug("Temp table name {}", tempTableName);
 
-          String createTempSql = dbDialect.getCreateQuery(tempTableName, fieldsMetadata.allFields.values(), true);
+          String createTempSql = dbDialect.getCreateQuery(tempTableName,
+              fieldsMetadata.allFields.values(), true);
           log.debug("createTempSql: {}", createTempSql);
           statement.addBatch(createTempSql);
 
-          String copyTempSql = dbDialect.getCopyQuery(tempTableName, fieldsMetadata.allFields.values(), stageName, avroFile);
+          String copyTempSql = dbDialect.getCopyQuery(tempTableName,
+              fieldsMetadata.allFields.values(), stageName, avroFile);
           log.debug("copyTempSql: {}", copyTempSql);
           statement.addBatch(copyTempSql);
 
@@ -172,11 +183,16 @@ public class BulkWriter extends JdbcDbWriter {
           break;
 
         case COPY:
-          String copySql = dbDialect.getCopyQuery(tableName, fieldsMetadata.allFields.values(), stageName, avroFile);
+          String copySql = dbDialect.getCopyQuery(tableName,
+              fieldsMetadata.allFields.values(), stageName, avroFile);
           log.debug("copyTempSql: {}", copySql);
           statement.addBatch(copySql);
 
           break;
+
+        default:
+          throw new IllegalArgumentException(
+              "Invalid insertMode for bulk load semantics " + config.insertMode);
       }
 
       int[] updateCounts = statement.executeBatch();
@@ -193,7 +209,8 @@ public class BulkWriter extends JdbcDbWriter {
     private void open() throws IOException {
       avroFile = String.format("%s_%d_%d.avro", tableName, kafkaPartition, kafkaOffset);
 
-      String bucketKey = (pathPrefix != null && !pathPrefix.isEmpty()) ? pathPrefix + "/" + avroFile : avroFile;
+      String bucketKey = (pathPrefix != null && !pathPrefix.isEmpty())
+          ? pathPrefix + "/" + avroFile : avroFile;
 
       s3OutputStream = new S3OutputStream(bucketName, bucketKey, partSize, s3);
 
