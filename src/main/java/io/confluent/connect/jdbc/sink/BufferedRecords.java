@@ -48,7 +48,13 @@ public class BufferedRecords {
   private PreparedStatement preparedStatement;
   private PreparedStatementBinder preparedStatementBinder;
 
-  public BufferedRecords(JdbcSinkConfig config, String tableName, DbDialect dbDialect, DbStructure dbStructure, Connection connection) {
+  public BufferedRecords(
+      JdbcSinkConfig config,
+      String tableName,
+      DbDialect dbDialect,
+      DbStructure dbStructure,
+      Connection connection
+  ) {
     this.tableName = tableName;
     this.config = config;
     this.dbDialect = dbDialect;
@@ -62,14 +68,26 @@ public class BufferedRecords {
     if (currentSchemaPair == null) {
       currentSchemaPair = schemaPair;
       // re-initialize everything that depends on the record schema
-      fieldsMetadata = FieldsMetadata.extract(tableName, config.pkMode, config.pkFields, config.fieldsWhitelist,
-          config.versionField, currentSchemaPair);
+      fieldsMetadata = FieldsMetadata.extract(
+          tableName,
+          config.pkMode,
+          config.pkFields,
+          config.fieldsWhitelist,
+          config.versionField,
+          currentSchemaPair
+      );
       dbStructure.createOrAmendIfNecessary(config, connection, tableName, fieldsMetadata);
       final String insertSql = getInsertSql();
       log.debug("{} sql: {}", config.insertMode, insertSql);
       close();
       preparedStatement = connection.prepareStatement(insertSql);
-      preparedStatementBinder = new PreparedStatementBinder(preparedStatement, config.pkMode, schemaPair, fieldsMetadata, config.insertMode);
+      preparedStatementBinder = new PreparedStatementBinder(
+          preparedStatement,
+          config.pkMode,
+          schemaPair,
+          fieldsMetadata,
+          config.insertMode
+      );
     }
 
     final List<SinkRecord> flushed;
@@ -82,7 +100,8 @@ public class BufferedRecords {
         flushed = Collections.emptyList();
       }
     } else {
-      // Each batch needs to have the same SchemaPair, so get the buffered records out, reset state and re-attempt the add
+      // Each batch needs to have the same SchemaPair, so get the buffered records out, reset
+      // state and re-attempt the add
       flushed = flush();
       currentSchemaPair = null;
       flushed.addAll(add(record));
@@ -109,19 +128,32 @@ public class BufferedRecords {
     if (totalUpdateCount != records.size() && !successNoInfo) {
       switch (config.insertMode) {
         case INSERT:
-          throw new ConnectException(String.format("Update count (%d) did not sum up to total number of records inserted (%d)",
-                                                   totalUpdateCount, records.size()));
+          throw new ConnectException(
+              String.format(
+                  "Update count (%d) did not sum up to total number of records inserted (%d)",
+                  totalUpdateCount,
+                  records.size()
+              )
+          );
         case UPSERT:
         case UPDATE:
-          log.trace(config.insertMode + " records:{} resulting in in totalUpdateCount:{}", records.size(), totalUpdateCount);
+          log.trace(
+              config.insertMode + " records:{} resulting in in totalUpdateCount:{}",
+              records.size(),
+              totalUpdateCount
+          );
+          break;
+        default:
+          throw new ConnectException("Unknown insert mode: " + config.insertMode);
       }
     }
     if (successNoInfo) {
       log.info(
-              config.insertMode + " records:{} , but no count of the number of rows it affected is available",
-              records.size());
+          config.insertMode
+          + " records:{} , but no count of the number of rows it affected is available",
+          records.size()
+      );
     }
-
 
     final List<SinkRecord> flushedRecords = records;
     records = new ArrayList<>();
@@ -138,16 +170,29 @@ public class BufferedRecords {
   private String getInsertSql() {
     switch (config.insertMode) {
       case INSERT:
-        return dbDialect.getInsert(tableName, fieldsMetadata.keyFieldNames, fieldsMetadata.nonKeyFieldNames);
+        return dbDialect.getInsert(
+            tableName,
+            fieldsMetadata.keyFieldNames,
+            fieldsMetadata.nonKeyFieldNames
+        );
       case UPSERT:
         if (fieldsMetadata.keyFieldNames.isEmpty()) {
           throw new ConnectException(String.format(
-              "Write to table '%s' in UPSERT mode requires key field names to be known, check the primary key configuration", tableName
+              "Write to table '%s' in UPSERT mode requires key field names to be known, check the"
+              + " primary key configuration", tableName
           ));
         }
-        return dbDialect.getUpsertQuery(tableName, fieldsMetadata.keyFieldNames, fieldsMetadata.nonKeyFieldNames);
+        return dbDialect.getUpsertQuery(
+            tableName,
+            fieldsMetadata.keyFieldNames,
+            fieldsMetadata.nonKeyFieldNames
+        );
       case UPDATE:
-        return  dbDialect.getUpdate(tableName, fieldsMetadata.keyFieldNames, fieldsMetadata.nonKeyFieldNames);
+        return  dbDialect.getUpdate(
+            tableName,
+            fieldsMetadata.keyFieldNames,
+            fieldsMetadata.nonKeyFieldNames
+        );
       default:
         throw new ConnectException("Invalid insert mode");
     }

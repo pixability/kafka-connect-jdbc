@@ -80,20 +80,32 @@ public class JdbcSinkTask extends SinkTask {
     }
     final SinkRecord first = records.iterator().next();
     final int recordsCount = records.size();
-    log.trace("Received {} records. First record kafka coordinates:({}-{}-{}). Writing them to the database...",
-              recordsCount, first.topic(), first.kafkaPartition(), first.kafkaOffset());
+    log.trace(
+        "Received {} records. First record kafka coordinates:({}-{}-{}). Writing them to the "
+        + "database...",
+        recordsCount, first.topic(), first.kafkaPartition(), first.kafkaOffset()
+    );
     try {
       writer.write(records);
     } catch (SQLException sqle) {
-      log.warn("Write of {} records failed, remainingRetries={}", records.size(), remainingRetries, sqle);
+      log.warn(
+          "Write of {} records failed, remainingRetries={}",
+          records.size(),
+          remainingRetries,
+          sqle
+      );
+      String sqleAllMessages = "";
+      for (Throwable e : sqle) {
+        sqleAllMessages += e + System.lineSeparator();
+      }
       if (remainingRetries == 0) {
-        throw new ConnectException(sqle);
+        throw new ConnectException(new SQLException(sqleAllMessages));
       } else {
         writer.closeQuietly();
         initWriter();
         remainingRetries--;
         context.timeout(config.retryBackoffMs);
-        throw new RetriableException(sqle);
+        throw new RetriableException(new SQLException(sqleAllMessages));
       }
     }
     remainingRetries = config.maxRetries;

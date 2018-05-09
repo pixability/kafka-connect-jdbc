@@ -38,7 +38,11 @@ public abstract class JdbcDbWriter {
     this.dbDialect = dbDialect;
     this.dbStructure = dbStructure;
 
-    this.cachedConnectionProvider = new CachedConnectionProvider(config.connectionUrl, config.connectionUser, config.connectionPassword) {
+    this.cachedConnectionProvider = new CachedConnectionProvider(
+        config.connectionUrl,
+        config.connectionUser,
+        config.connectionPassword
+    ) {
       @Override
       protected void onConnect(Connection connection) throws SQLException {
         connection.setAutoCommit(false);
@@ -55,7 +59,11 @@ public abstract class JdbcDbWriter {
   String destinationTable(String topic) {
     final String tableName = config.tableNameFormat.replace("${topic}", topic);
     if (tableName.isEmpty()) {
-      throw new ConnectException(String.format("Destination table name for topic '%s' is empty using the format string '%s'", topic, config.tableNameFormat));
+      throw new ConnectException(String.format(
+          "Destination table name for topic '%s' is empty using the format string '%s'",
+          topic,
+          config.tableNameFormat
+      ));
     }
     return tableName;
   }

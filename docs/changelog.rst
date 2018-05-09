@@ -3,6 +3,43 @@
 Changelog
 =========
 
+Version 4.1.0
+-------------
+
+JDBC Source Connector
+~~~~~~~~~~~~~~~~~~~~~
+
+* `PR-351 <https://github.com/confluentinc/kafka-connect-jdbc/pull/351>`_ - CC-1366: close ResultSets and Statements during shutdown
+* `PR-331 <https://github.com/confluentinc/kafka-connect-jdbc/pull/331>`_ - add a note about SSL with JDBC
+* `PR-319 <https://github.com/confluentinc/kafka-connect-jdbc/pull/319>`_ - get current timestamp on all DB2 versions - reopening from k1th/master
+
+JDBC Sink Connector
+~~~~~~~~~~~~~~~~~~~
+
+* `PR-331 <https://github.com/confluentinc/kafka-connect-jdbc/pull/331>`_ - add a note about SSL with JDBC
+* `PR-306 <https://github.com/confluentinc/kafka-connect-jdbc/pull/306>`_ - Log out actual sql exceptions (fix for #291)
+
+Version 4.0.0
+-------------
+
+JDBC Source Connector
+~~~~~~~~~~~~~~~~~~~~~
+
+* `PR-295 <https://github.com/confluentinc/kafka-connect-jdbc/pull/295>`_ - Remove unused imports
+* `PR-288 <https://github.com/confluentinc/kafka-connect-jdbc/pull/288>`_ - Remove unnecessary surefire configuration overrides.
+* `PR-287 <https://github.com/confluentinc/kafka-connect-jdbc/pull/287>`_ - CC-1112: Use common pom as parent and fix checkstyle issues.
+* `PR-212 <https://github.com/confluentinc/kafka-connect-jdbc/pull/212>`_ - Fixed issue #211 - get current timestamp on DB2 UDB for AS/400
+* `PR-203 <https://github.com/confluentinc/kafka-connect-jdbc/pull/203>`_ - Issue #198: Improved the JdbcSourceConnector to retry JDBC connection when needed on startup
+
+JDBC Sink Connector
+~~~~~~~~~~~~~~~~~~~~~
+
+* `PR-295 <https://github.com/confluentinc/kafka-connect-jdbc/pull/295>`_ - Remove unused imports
+* `PR-288 <https://github.com/confluentinc/kafka-connect-jdbc/pull/288>`_ - Remove unnecessary surefire configuration overrides.
+* `PR-287 <https://github.com/confluentinc/kafka-connect-jdbc/pull/287>`_ - CC-1112: Use common pom as parent and fix checkstyle issues.
+* `PR-212 <https://github.com/confluentinc/kafka-connect-jdbc/pull/212>`_ - Fixed issue #211 - get current timestamp on DB2 UDB for AS/400
+* `PR-250 <https://github.com/confluentinc/kafka-connect-jdbc/pull/250>`_ - Fix typo (dd -> add)
+
 Version 3.3.1
 -------------
 
