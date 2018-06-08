@@ -16,7 +16,7 @@
 
 package io.confluent.connect.jdbc.sink;
 
-import com.amazonaws.auth.EnvironmentVariableCredentialsProvider;
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
@@ -48,7 +48,7 @@ public class JdbcSinkTask extends SinkTask {
     log.info("Starting task");
     config = new JdbcSinkConfig(props);
     config.avroData = new AvroData(config.getInt(JdbcSinkConfig.SCHEMA_CACHE_SIZE));
-    EnvironmentVariableCredentialsProvider credentialsProvider = new EnvironmentVariableCredentialsProvider();
+    DefaultAWSCredentialsProviderChain credentialsProvider = new DefaultAWSCredentialsProviderChain();
     config.credentials = credentialsProvider.getCredentials();
     config.s3 = AmazonS3ClientBuilder.standard()
         .withRegion(config.getString(JdbcSinkConfig.S3_REGION))
