@@ -96,6 +96,7 @@ class S3OutputStream extends OutputStream {
     }
 
     try {
+      log.debug("Upload part size {}", size);
       multiPartUpload.uploadPart(new ByteArrayInputStream(buffer.array()), size);
     } catch (Exception e) {
       // TODO: elaborate on the exception interpretation. We might be able to retry.

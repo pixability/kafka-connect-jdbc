@@ -136,12 +136,15 @@ public class BulkWriter extends JdbcDbWriter {
       Object value = avroData.fromConnectData(record.valueSchema(), record.value());
       writer.append(value);
       if (++recordCount >= config.batchSize) {
+        log.trace("writing batch {}", recordCount);
         commit();
         open();
       }
     }
 
     void commit() throws SQLException, IOException {
+      log.trace("commit {} records", recordCount);
+
       if (recordCount == 0) return;
 
       // flush and close avro data file

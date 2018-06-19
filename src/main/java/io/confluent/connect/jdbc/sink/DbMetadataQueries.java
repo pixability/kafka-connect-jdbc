@@ -99,7 +99,7 @@ public abstract class DbMetadataQueries {
           throw new SQLException("Failed to determine Oracle schema");
         }
       }
-    } else if (product.toLowerCase().startsWith("postgre")) {
+    } else if (product.equalsIgnoreCase("snowflake") || product.toLowerCase().startsWith("postgre")) {
       return connection.getSchema();
     } else {
       return null;
