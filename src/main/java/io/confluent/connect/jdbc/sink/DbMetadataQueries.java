@@ -59,7 +59,9 @@ public abstract class DbMetadataQueries {
     final String catalog = connection.getCatalog();
 
     final String schema = getSchema(connection, product);
-    final String tableNameForQuery = product.equalsIgnoreCase("oracle") ? tableName.toUpperCase() : tableName;
+    final String tableNameForQuery =
+        product.equalsIgnoreCase("oracle") || product.equalsIgnoreCase("snowflake") ?
+            tableName.toUpperCase() : tableName;
 
     log.info("Querying column metadata for product:{} schema:{} catalog:{} table:{}", product, schema, catalog, tableNameForQuery);
 

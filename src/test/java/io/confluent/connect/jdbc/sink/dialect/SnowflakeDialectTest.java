@@ -50,41 +50,41 @@ public class SnowflakeDialectTest extends BaseDialectTest {
   @Test
   public void createOneColNoPk() {
     verifyCreateOneColNoPk(
-        "CREATE TABLE IF NOT EXISTS \"test\" (" + System.lineSeparator() +
-        "\"col1\" NUMBER(10,0) NOT NULL)");
+        "CREATE TABLE IF NOT EXISTS TEST (" + System.lineSeparator() +
+        "COL1 NUMBER(10,0) NOT NULL)");
   }
 
   @Test
   public void createOneColOnePk() {
     verifyCreateOneColOnePk(
-        "CREATE TABLE IF NOT EXISTS \"test\" (" + System.lineSeparator() +
-        "\"pk1\" NUMBER(10,0) NOT NULL," + System.lineSeparator() +
-        "PRIMARY KEY(\"pk1\"))");
+        "CREATE TABLE IF NOT EXISTS TEST (" + System.lineSeparator() +
+        "PK1 NUMBER(10,0) NOT NULL," + System.lineSeparator() +
+        "PRIMARY KEY(PK1))");
   }
 
   @Test
   public void createThreeColTwoPk() {
     verifyCreateThreeColTwoPk(
-        "CREATE TABLE IF NOT EXISTS \"test\" (" + System.lineSeparator() +
-        "\"pk1\" NUMBER(10,0) NOT NULL," + System.lineSeparator() +
-        "\"pk2\" NUMBER(10,0) NOT NULL," + System.lineSeparator() +
-        "\"col1\" NUMBER(10,0) NOT NULL," + System.lineSeparator() +
-        "PRIMARY KEY(\"pk1\",\"pk2\"))"
+        "CREATE TABLE IF NOT EXISTS TEST (" + System.lineSeparator() +
+        "PK1 NUMBER(10,0) NOT NULL," + System.lineSeparator() +
+        "PK2 NUMBER(10,0) NOT NULL," + System.lineSeparator() +
+        "COL1 NUMBER(10,0) NOT NULL," + System.lineSeparator() +
+        "PRIMARY KEY(PK1,PK2))"
     );
   }
 
   @Test
   public void alterAddOneCol() {
     verifyAlterAddOneCol(
-        "ALTER TABLE \"test\" ADD \"newcol1\" NUMBER(10,0) NULL"
+        "ALTER TABLE TEST ADD NEWCOL1 NUMBER(10,0) NULL"
     );
   }
 
   @Test
   public void alterAddTwoCol() {
     verifyAlterAddTwoCols(
-        "ALTER TABLE \"test\" ADD \"newcol1\" NUMBER(10,0) NULL",
-        "ALTER TABLE \"test\" ADD \"newcol2\" NUMBER(10,0) DEFAULT 42"
+        "ALTER TABLE TEST ADD NEWCOL1 NUMBER(10,0) NULL",
+        "ALTER TABLE TEST ADD NEWCOL2 NUMBER(10,0) DEFAULT 42"
     );
   }
 }

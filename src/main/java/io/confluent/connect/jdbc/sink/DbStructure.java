@@ -168,7 +168,7 @@ public class DbStructure {
   Set<SinkRecordField> missingFields(Collection<SinkRecordField> fields, Set<String> dbColumnNames) {
     final Set<SinkRecordField> missingFields = new HashSet<>();
     for (SinkRecordField field : fields) {
-      if (!dbColumnNames.contains(field.name())) {
+      if (!dbColumnNames.contains(field.name()) && !dbColumnNames.contains(field.name().toUpperCase())) {
         missingFields.add(field);
       }
     }

@@ -40,6 +40,11 @@ public class SnowflakeDialect extends DbDialect {
   }
 
   @Override
+  protected String escaped(String identifier) {
+    return identifier.toUpperCase();
+  }
+
+  @Override
   protected String getSqlType(String schemaName, Map<String, String> parameters, Schema.Type type) {
     if (schemaName != null) {
       switch (schemaName) {

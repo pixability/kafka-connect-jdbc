@@ -234,7 +234,7 @@ public abstract class DbDialect {
     return new Transform<String>() {
       @Override
       public void apply(StringBuilder builder, String identifier) {
-        builder.append(escapeStart).append(identifier).append(escapeEnd);
+        builder.append(escaped(identifier));
       }
     };
   }
@@ -243,7 +243,7 @@ public abstract class DbDialect {
     return new Transform<String>() {
       @Override
       public void apply(StringBuilder builder, String identifier) {
-        builder.append(prefix).append(escapeStart).append(identifier).append(escapeEnd);
+        builder.append(prefix).append(escaped(identifier));
       }
     };
   }
