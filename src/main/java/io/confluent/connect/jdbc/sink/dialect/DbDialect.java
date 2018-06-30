@@ -217,6 +217,12 @@ public abstract class DbDialect {
         }
         builder.append("x'").append(DatatypeConverter.printHexBinary(bytes)).append("'");
         break;
+      case STRUCT:
+      case MAP:
+      case ARRAY:
+        // the schema provides a default body we do not need to define it as part of the table spec
+        builder.append("NULL");
+        break;
       default:
         throw new ConnectException("Unsupported type for column value: " + type);
     }
