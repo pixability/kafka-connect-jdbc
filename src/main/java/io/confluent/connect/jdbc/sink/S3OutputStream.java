@@ -199,7 +199,7 @@ class S3OutputStream extends OutputStream {
   // Dummy listener for now, just logs the event progress.
   private static class ConnectProgressListener implements ProgressListener {
     public void progressChanged(ProgressEvent progressEvent) {
-      log.debug("Progress event: " + progressEvent);
+      log.trace("Progress event: " + progressEvent);
     }
   }
 

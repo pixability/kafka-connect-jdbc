@@ -43,12 +43,15 @@ public abstract class DbMetadataQueries {
 
     final String product = meta.getDatabaseProductName();
     final String schema = getSchema(connection, product);
+    final String tableNameForQuery =
+        product.equalsIgnoreCase("oracle") || product.equalsIgnoreCase("snowflake") ?
+            tableName.toUpperCase() : tableName;
 
-    log.info("Checking table:{} exists for product:{} schema:{} catalog:", tableName, product, schema, catalog);
+    log.info("Checking table:{} exists for product:{} schema:{} catalog:", tableNameForQuery, product, schema, catalog);
 
-    try (ResultSet rs = meta.getTables(catalog, schema, tableName, new String[]{"TABLE"})) {
+    try (ResultSet rs = meta.getTables(catalog, schema, tableNameForQuery, new String[]{"TABLE"})) {
       final boolean exists = rs.next();
-      log.info("product:{} schema:{} catalog:{} -- table:{} is {}", product, schema, catalog, tableName, exists ? "present" : "absent");
+      log.info("product:{} schema:{} catalog:{} -- table:{} is {}", product, schema, catalog, tableNameForQuery, exists ? "present" : "absent");
       return exists;
     }
   }
@@ -60,7 +63,7 @@ public abstract class DbMetadataQueries {
 
     final String schema = getSchema(connection, product);
     final String tableNameForQuery =
-        product.equalsIgnoreCase("oracle") || product.equalsIgnoreCase("snowflake") ?
+        product.equalsIgnoreCase("snowflake") || product.equalsIgnoreCase("oracle") ?
             tableName.toUpperCase() : tableName;
 
     log.info("Querying column metadata for product:{} schema:{} catalog:{} table:{}", product, schema, catalog, tableNameForQuery);

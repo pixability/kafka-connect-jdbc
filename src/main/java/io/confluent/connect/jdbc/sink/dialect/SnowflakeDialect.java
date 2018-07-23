@@ -217,6 +217,7 @@ public class SnowflakeDialect extends DbDialect {
     });
     builder.append(" FROM @").append(stageName).append(") FILES=(");
     builder.append("'/").append(fileName).append("')");
+    builder.append(" COPY_OPTIONS=(ON_ERROR=SKIP_FILE)");
 
     return builder.toString();
   }

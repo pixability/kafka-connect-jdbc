@@ -160,30 +160,30 @@ public class BulkWriter extends JdbcDbWriter {
           log.debug("Temp table name {}", tempTableName);
 
           String createTempSql = dbDialect.getCreateQuery(tempTableName, fieldsMetadata.allFields.values(), true);
-          log.debug("createTempSql: {}", createTempSql);
+          log.debug("{}: createTempSql={}", tempTableName, createTempSql);
           statement.addBatch(createTempSql);
 
           String copyTempSql = dbDialect.getCopyQuery(tempTableName, fieldsMetadata.allFields.values(), stageName, avroFile);
-          log.debug("copyTempSql: {}", copyTempSql);
+          log.debug("{}: copyTempSql={}", tempTableName, copyTempSql);
           statement.addBatch(copyTempSql);
 
           String mergeIntoSql = dbDialect.getMergeQuery(tableName, tempTableName,
               fieldsMetadata.keyFieldNames, versionColumn, fieldsMetadata.nonKeyFieldNames);
-          log.debug("mergeIntoSql: {}", mergeIntoSql);
+          log.debug("{}: mergeIntoSql={}", tempTableName, mergeIntoSql);
           statement.addBatch(mergeIntoSql);
 
           break;
 
         case COPY:
           String copySql = dbDialect.getCopyQuery(tableName, fieldsMetadata.allFields.values(), stageName, avroFile);
-          log.debug("copyTempSql: {}", copySql);
+          log.debug("{}_{}_{}: copyTempSql={}", tableName, kafkaPartition, kafkaOffset, copySql);
           statement.addBatch(copySql);
 
           break;
       }
 
       int[] updateCounts = statement.executeBatch();
-      log.debug("Got updateCounts={}", updateCounts);
+      log.debug("{}_{}_{}: Got updateCounts={}", tableName, kafkaPartition, kafkaOffset, updateCounts);
       statement.close();
     }
 
