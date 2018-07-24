@@ -52,10 +52,15 @@ public abstract class JdbcDbWriter {
     cachedConnectionProvider.closeQuietly();
   }
 
-  String destinationTable(String topic) {
-    final String tableName = config.tableNameFormat.replace("${topic}", topic);
+  String destinationTable(SinkRecord record) {
+    final String topic = record.topic();
+    final String tableName = config.tableNameFormat
+        .replace("${topic}", topic)
+        .replace("${partition}", record.kafkaPartition().toString());
     if (tableName.isEmpty()) {
-      throw new ConnectException(String.format("Destination table name for topic '%s' is empty using the format string '%s'", topic, config.tableNameFormat));
+      throw new ConnectException(String.format(
+          "Destination table name for topic '%s' is empty using the format string '%s'",
+          topic, config.tableNameFormat));
     }
     return tableName;
   }

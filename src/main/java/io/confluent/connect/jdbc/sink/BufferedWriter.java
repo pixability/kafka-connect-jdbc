@@ -38,7 +38,7 @@ public class BufferedWriter extends JdbcDbWriter {
 
     final Map<String, BufferedRecords> bufferByTable = new HashMap<>();
     for (SinkRecord record : records) {
-      final String table = destinationTable(record.topic());
+      final String table = destinationTable(record);
       BufferedRecords buffer = bufferByTable.get(table);
       if (buffer == null) {
         buffer = new BufferedRecords(config, table, dbDialect, dbStructure, connection);

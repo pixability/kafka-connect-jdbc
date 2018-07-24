@@ -218,7 +218,7 @@ public class BulkWriter extends JdbcDbWriter {
     final Map<String, AvroFileWriter> bufferByTable = new HashMap<>();
 
     for (SinkRecord record : records) {
-      final String table = destinationTable(record.topic());
+      final String table = destinationTable(record);
       AvroFileWriter writer = bufferByTable.get(table);
       if (writer == null) {
         writer = new AvroFileWriter(config, table, dbDialect, dbStructure, connection);
