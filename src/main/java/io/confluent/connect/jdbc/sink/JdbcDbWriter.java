@@ -38,7 +38,8 @@ public abstract class JdbcDbWriter {
     this.dbDialect = dbDialect;
     this.dbStructure = dbStructure;
 
-    this.cachedConnectionProvider = new CachedConnectionProvider(config.connectionUrl, config.connectionUser, config.connectionPassword) {
+    this.cachedConnectionProvider = new CachedConnectionProvider(config.connectionUrl,
+        config.connectionUser, config.connectionPassword, config.connectionMaxBorrows) {
       @Override
       protected void onConnect(Connection connection) throws SQLException {
         connection.setAutoCommit(false);

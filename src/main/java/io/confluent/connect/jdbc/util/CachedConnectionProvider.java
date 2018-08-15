@@ -33,25 +33,32 @@ public class CachedConnectionProvider {
   private final String url;
   private final String username;
   private final String password;
+  private final int maxBorrows;
 
   private Connection connection;
+  private int borrows = 0;
 
   public CachedConnectionProvider(String url) {
-    this(url, null, null);
+    this(url, null, null, 0);
   }
 
   public CachedConnectionProvider(String url, String username, String password) {
+    this(url, username, password, 0);
+  }
+
+  public CachedConnectionProvider(String url, String username, String password, int maxBorrows) {
     this.url = url;
     this.username = username;
     this.password = password;
+    this.maxBorrows = maxBorrows;
   }
 
   public synchronized Connection getValidConnection() {
     try {
       if (connection == null) {
         newConnection();
-      } else if (!connection.isValid(VALIDITY_CHECK_TIMEOUT_S)) {
-        log.info("The database connection is invalid. Reconnecting...");
+      } else if ((maxBorrows > 0 && ++borrows > maxBorrows) || !connection.isValid(VALIDITY_CHECK_TIMEOUT_S)) {
+        log.info("Invalidating current connection and reconnecting...");
         closeQuietly();
         newConnection();
       }
@@ -65,20 +72,27 @@ public class CachedConnectionProvider {
     log.debug("Attempting to connect to {}", url);
     connection = DriverManager.getConnection(url, username, password);
     onConnect(connection);
+    borrows = 1;
   }
 
   public synchronized void closeQuietly() {
     if (connection != null) {
       try {
-        connection.close();
-        connection = null;
+        connection.rollback();
       } catch (SQLException sqle) {
-        log.warn("Ignoring error closing connection", sqle);
+        log.warn("Ignoring connection rollback error", sqle);
+      } finally {
+        try {
+          connection.close();
+        } catch (SQLException sqle) {
+          log.warn("Ignoring error closing connection", sqle);
+        } finally {
+          connection = null;
+        }
       }
     }
   }
 
-  protected void onConnect(Connection connection) throws SQLException {
-  }
+  protected void onConnect(Connection connection) throws SQLException {}
 
 }

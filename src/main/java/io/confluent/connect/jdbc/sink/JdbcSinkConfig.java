@@ -69,6 +69,11 @@ public class JdbcSinkConfig extends AbstractConfig {
   private static final String CONNECTION_PASSWORD_DOC = "JDBC connection password.";
   private static final String CONNECTION_PASSWORD_DISPLAY = "JDBC Password";
 
+  public static final String CONNECTION_MAX_BORROWS = "connection.max.borrows";
+  private static final int CONNECTION_MAX_BORROWS_DEFAULT = 50;
+  private static final String CONNECTION_MAX_BORROWS_DOC = "Max connection use count";
+  private static final String CONNECTION_MAX_BORROWS_DISPLAY = "JDBC Connection Max Borrows Count";
+
   public static final String TABLE_NAME_FORMAT = "table.name.format";
   private static final String TABLE_NAME_FORMAT_DEFAULT = "${topic}";
   private static final String TABLE_NAME_FORMAT_DOC =
@@ -216,6 +221,9 @@ public class JdbcSinkConfig extends AbstractConfig {
       .define(CONNECTION_PASSWORD, ConfigDef.Type.PASSWORD, null,
               ConfigDef.Importance.HIGH, CONNECTION_PASSWORD_DOC,
               CONNECTION_GROUP, 3, ConfigDef.Width.MEDIUM, CONNECTION_PASSWORD_DISPLAY)
+      .define(CONNECTION_MAX_BORROWS, ConfigDef.Type.INT, CONNECTION_MAX_BORROWS_DEFAULT,
+              ConfigDef.Importance.MEDIUM, CONNECTION_MAX_BORROWS_DOC,
+              CONNECTION_GROUP, 4, ConfigDef.Width.MEDIUM, CONNECTION_MAX_BORROWS_DISPLAY)
       // Writes
       .define(INSERT_MODE, ConfigDef.Type.STRING, INSERT_MODE_DEFAULT, EnumValidator.in(InsertMode.values()),
               ConfigDef.Importance.HIGH, INSERT_MODE_DOC,
@@ -279,6 +287,7 @@ public class JdbcSinkConfig extends AbstractConfig {
   public final String connectionUrl;
   public final String connectionUser;
   public final String connectionPassword;
+  public final int connectionMaxBorrows;
   public final String tableNameFormat;
   public final int batchSize;
   public final int maxRetries;
@@ -300,6 +309,7 @@ public class JdbcSinkConfig extends AbstractConfig {
     connectionUrl = getString(CONNECTION_URL);
     connectionUser = getString(CONNECTION_USER);
     connectionPassword = getPasswordValue(CONNECTION_PASSWORD);
+    connectionMaxBorrows = getInt(CONNECTION_MAX_BORROWS);
     tableNameFormat = getString(TABLE_NAME_FORMAT).trim();
     batchSize = getInt(BATCH_SIZE);
     maxRetries = getInt(MAX_RETRIES);
