@@ -195,8 +195,12 @@ public class SnowflakeDialect extends DbDialect {
         if (col.schemaName() != null) {
           switch (col.schemaName()) {
             case Time.LOGICAL_NAME:
-            case Date.LOGICAL_NAME:
               throw new ConnectException("Unsupported type for column value: " + col.schemaType());
+            case Date.LOGICAL_NAME:
+              builder.append("to_timestamp(cast($1:")
+                  .append(col.name())
+                  .append("*86400 as integer),0)");
+              return;
             case Timestamp.LOGICAL_NAME:
               builder.append("to_timestamp(cast($1:")
                   .append(col.name())
