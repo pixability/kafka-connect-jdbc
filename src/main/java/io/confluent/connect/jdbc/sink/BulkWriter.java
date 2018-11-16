@@ -239,6 +239,6 @@ public class BulkWriter extends JdbcDbWriter {
       }
     }
 
-    connection.commit();
+    if (!config.connectionAutoCommit) connection.commit();
   }
 }

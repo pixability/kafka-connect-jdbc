@@ -50,7 +50,7 @@ public class BufferedWriter extends JdbcDbWriter {
       buffer.flush();
       buffer.close();
     }
-    connection.commit();
+    if (!config.connectionAutoCommit) connection.commit();
   }
 
 }

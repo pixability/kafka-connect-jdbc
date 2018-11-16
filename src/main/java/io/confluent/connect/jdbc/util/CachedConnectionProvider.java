@@ -34,23 +34,25 @@ public class CachedConnectionProvider {
   private final String username;
   private final String password;
   private final int maxBorrows;
+  private final boolean autoCommit;
 
   private Connection connection;
   private int borrows = 0;
 
   public CachedConnectionProvider(String url) {
-    this(url, null, null, 0);
+    this(url, null, null);
   }
 
   public CachedConnectionProvider(String url, String username, String password) {
-    this(url, username, password, 0);
+    this(url, username, password, 0, false);
   }
 
-  public CachedConnectionProvider(String url, String username, String password, int maxBorrows) {
+  public CachedConnectionProvider(String url, String username, String password, int maxBorrows, boolean autoCommit) {
     this.url = url;
     this.username = username;
     this.password = password;
     this.maxBorrows = maxBorrows;
+    this.autoCommit = autoCommit;
   }
 
   public synchronized Connection getValidConnection() {
@@ -78,7 +80,7 @@ public class CachedConnectionProvider {
   public synchronized void closeQuietly() {
     if (connection != null) {
       try {
-        connection.rollback();
+        if (!autoCommit) connection.rollback();
       } catch (SQLException sqle) {
         log.warn("Ignoring connection rollback error", sqle);
       } finally {
@@ -93,6 +95,8 @@ public class CachedConnectionProvider {
     }
   }
 
-  protected void onConnect(Connection connection) throws SQLException {}
+  protected void onConnect(Connection connection) throws SQLException {
+    connection.setAutoCommit(autoCommit);
+  }
 
 }

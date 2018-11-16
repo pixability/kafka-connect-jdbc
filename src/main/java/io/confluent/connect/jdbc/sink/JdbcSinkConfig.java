@@ -74,6 +74,11 @@ public class JdbcSinkConfig extends AbstractConfig {
   private static final String CONNECTION_MAX_BORROWS_DOC = "Max connection use count";
   private static final String CONNECTION_MAX_BORROWS_DISPLAY = "JDBC Connection Max Borrows Count";
 
+  public static final String CONNECTION_AUTO_COMMIT = "connection.auto.commit";
+  private static final boolean CONNECTION_AUTO_COMMIT_DEFAULT = false;
+  private static final String CONNECTION_AUTO_COMMIT_DOC = "Connection auto-commit mode";
+  private static final String CONNECTION_AUTO_COMMIT_DISPLAY = "JDBC Connection Auto-Commit";
+
   public static final String TABLE_NAME_FORMAT = "table.name.format";
   private static final String TABLE_NAME_FORMAT_DEFAULT = "${topic}";
   private static final String TABLE_NAME_FORMAT_DOC =
@@ -224,6 +229,9 @@ public class JdbcSinkConfig extends AbstractConfig {
       .define(CONNECTION_MAX_BORROWS, ConfigDef.Type.INT, CONNECTION_MAX_BORROWS_DEFAULT,
               ConfigDef.Importance.MEDIUM, CONNECTION_MAX_BORROWS_DOC,
               CONNECTION_GROUP, 4, ConfigDef.Width.MEDIUM, CONNECTION_MAX_BORROWS_DISPLAY)
+      .define(CONNECTION_AUTO_COMMIT, ConfigDef.Type.BOOLEAN, CONNECTION_AUTO_COMMIT_DEFAULT,
+              ConfigDef.Importance.MEDIUM, CONNECTION_AUTO_COMMIT_DOC,
+              CONNECTION_GROUP, 5, ConfigDef.Width.MEDIUM, CONNECTION_AUTO_COMMIT_DISPLAY)
       // Writes
       .define(INSERT_MODE, ConfigDef.Type.STRING, INSERT_MODE_DEFAULT, EnumValidator.in(InsertMode.values()),
               ConfigDef.Importance.HIGH, INSERT_MODE_DOC,
@@ -288,6 +296,7 @@ public class JdbcSinkConfig extends AbstractConfig {
   public final String connectionUser;
   public final String connectionPassword;
   public final int connectionMaxBorrows;
+  public final boolean connectionAutoCommit;
   public final String tableNameFormat;
   public final int batchSize;
   public final int maxRetries;
@@ -310,6 +319,7 @@ public class JdbcSinkConfig extends AbstractConfig {
     connectionUser = getString(CONNECTION_USER);
     connectionPassword = getPasswordValue(CONNECTION_PASSWORD);
     connectionMaxBorrows = getInt(CONNECTION_MAX_BORROWS);
+    connectionAutoCommit = getBoolean(CONNECTION_AUTO_COMMIT);
     tableNameFormat = getString(TABLE_NAME_FORMAT).trim();
     batchSize = getInt(BATCH_SIZE);
     maxRetries = getInt(MAX_RETRIES);

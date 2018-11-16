@@ -88,7 +88,7 @@ public class DbStructure {
     log.info("Creating table:{} with SQL: {}", tableName, sql);
     try (Statement statement = connection.createStatement()) {
       statement.executeUpdate(sql);
-      connection.commit();
+      if (!config.connectionAutoCommit) connection.commit();
     }
     tableMetadataLoadingCache.refresh(connection, tableName);
   }
@@ -141,7 +141,7 @@ public class DbStructure {
       for (String amendTableQuery : amendTableQueries) {
         statement.executeUpdate(amendTableQuery);
       }
-      connection.commit();
+      if (!config.connectionAutoCommit) connection.commit();
     } catch (SQLException sqle) {
       if (maxRetries <= 0) {
         throw new ConnectException(

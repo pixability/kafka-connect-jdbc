@@ -19,7 +19,6 @@ package io.confluent.connect.jdbc.sink;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.sink.SinkRecord;
 
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Collection;
 
@@ -38,13 +37,12 @@ public abstract class JdbcDbWriter {
     this.dbDialect = dbDialect;
     this.dbStructure = dbStructure;
 
-    this.cachedConnectionProvider = new CachedConnectionProvider(config.connectionUrl,
-        config.connectionUser, config.connectionPassword, config.connectionMaxBorrows) {
-      @Override
-      protected void onConnect(Connection connection) throws SQLException {
-        connection.setAutoCommit(false);
-      }
-    };
+    this.cachedConnectionProvider = new CachedConnectionProvider(
+        config.connectionUrl,
+        config.connectionUser,
+        config.connectionPassword,
+        config.connectionMaxBorrows,
+        config.connectionAutoCommit);
   }
 
   abstract void write(final Collection<SinkRecord> records) throws SQLException;
