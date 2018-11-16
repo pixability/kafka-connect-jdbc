@@ -137,38 +137,46 @@ public class SnowflakeDialect extends DbDialect {
 
     builder.append("MERGE INTO ");
     builder.append(tableName);
-    builder.append(" target USING (WITH ");
+    builder.append(" target USING (");
 
-    builder.append("ranked AS (SELECT ");
-    joinToBuilder(builder, ",", keyColumns, columns, escaper());
-    builder.append(", ROW_NUMBER() OVER (PARTITION BY ");
-    joinToBuilder(builder, ",", keyColumns, escaper());
     if (versionColumn != null && !versionColumn.isEmpty()) {
+      builder.append(" WITH ");
+      builder.append("ranked AS (SELECT ");
+      joinToBuilder(builder, ",", keyColumns, columns, escaper());
+
+      builder.append(", ROW_NUMBER() OVER (PARTITION BY ");
+      joinToBuilder(builder, ",", keyColumns, escaper());
       builder.append(" ORDER BY ");
       builder.append(escaped(versionColumn));
+      builder.append(") AS __synthetic_rank FROM ");
+      builder.append(tempTableName);
+      builder.append("), ");
+
+      builder.append("latest AS (SELECT ");
+      joinToBuilder(builder, ",", keyColumns, escaper());
+      builder.append(", MAX(__synthetic_rank) AS __max_rank FROM ranked GROUP BY ");
+      joinToBuilder(builder, ",", keyColumns, escaper());
+      builder.append(") ");
+
+      builder.append("SELECT ");
+      joinToBuilder(builder, ",", keyColumns, columns, prefixedEscaper("ranked."));
+      builder.append(" FROM ranked INNER JOIN latest ON ");
+      joinToBuilder(builder, " AND ", keyColumns, new StringBuilderUtil.Transform<String>() {
+        @Override
+        public void apply(StringBuilder builder, String col) {
+          builder.append("ranked.").append(escaped(col));
+          builder.append("=");
+          builder.append("latest.").append(escaped(col));
+        }
+      });
+      builder.append(" AND ranked.__synthetic_rank=latest.__max_rank");
+    } else {
+      builder.append(" SELECT ");
+      joinToBuilder(builder, ",", keyColumns, columns, escaper());
+      builder.append(" FROM ");
+      builder.append(tempTableName);
     }
-    builder.append(") AS __synthetic_rank FROM ");
-    builder.append(tempTableName);
-    builder.append("), ");
 
-    builder.append("latest AS (SELECT ");
-    joinToBuilder(builder, ",", keyColumns, escaper());
-    builder.append(", MAX(__synthetic_rank) AS __max_rank FROM ranked GROUP BY ");
-    joinToBuilder(builder, ",", keyColumns, escaper());
-    builder.append(") ");
-
-    builder.append("SELECT ");
-    joinToBuilder(builder, ",", keyColumns, columns, prefixedEscaper("ranked."));
-    builder.append(" FROM ranked INNER JOIN latest ON ");
-    joinToBuilder(builder, " AND ", keyColumns, new StringBuilderUtil.Transform<String>() {
-      @Override
-      public void apply(StringBuilder builder, String col) {
-        builder.append("ranked.").append(escaped(col));
-        builder.append("=");
-        builder.append("latest.").append(escaped(col));
-      }
-    });
-    builder.append(" AND ranked.__synthetic_rank=latest.__max_rank");
     builder.append(") source ON ");
     joinToBuilder(builder, " AND ", keyColumns, new StringBuilderUtil.Transform<String>() {
       @Override
